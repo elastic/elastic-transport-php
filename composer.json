@@ -9,10 +9,7 @@
         "PSR-7",
         "PSR-18"
     ],
-    "license": [
-        "Apache-2.0",
-        "LGPL-2.1-only"
-    ],
+    "license": "Apache-2.0",
     "require": {
         "php": ">=7.3",
         "psr/http-client": "^1.0",

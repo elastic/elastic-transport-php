@@ -8,8 +8,7 @@
  * @license   https://www.gnu.org/licenses/lgpl-2.1.html GNU Lesser General Public License, Version 2.1
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License or
- * the GNU Lesser General Public License, Version 2.1, at your option.
+ * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);

@@ -29,5 +29,5 @@ scheduling algorithm.
 
 Copyright (c) [Elasticsearch B.V](https://www.elastic.co).
 
-This software is licensed under the Apache License, Version 2.0 or the GNU
-Lesser General Public License, Version 2.1. Read the [LICENSE](LICENSE) file for more information.
+This software is licensed under the Apache License, Version 2.0.
+Read the [LICENSE](LICENSE) file for more information.
