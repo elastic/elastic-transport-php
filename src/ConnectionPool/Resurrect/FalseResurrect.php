@@ -16,7 +16,7 @@ namespace Elastic\Transport\ConnectionPool\Resurrect;
 
 use Elastic\Transport\ConnectionPool\Connection;
 
-class FalseResurrect extends AbstractResurrect
+class FalseResurrect implements ResurrectInterface
 {
     public function ping(Connection $connection): bool
     {

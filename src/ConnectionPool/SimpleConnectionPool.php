@@ -15,6 +15,5 @@ declare(strict_types=1);
 namespace Elastic\Transport\ConnectionPool;
 
 class SimpleConnectionPool extends AbstractConnectionPool
-{
-    
+{ 
 }

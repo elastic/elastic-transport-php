@@ -15,61 +15,111 @@ declare(strict_types=1);
 namespace Elastic\Transport;
 
 use Elastic\Transport\ConnectionPool\ConnectionPoolInterface;
+
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
-class Transport implements ClientInterface
+use function sprintf;
+
+final class Transport implements ClientInterface
 {
-    private LoggerInterface $logger;
-    private ConnectionPoolInterface $connectionPool;
+    private $client;
+    private $logger;
+    private $connectionPool;
+    private $headers = [];
+    private $user;
+    private $password;
 
     public function __construct(
         ClientInterface $client,
         ConnectionPoolInterface $connectionPool,
-        LoggerInterface $logger = null
+        LoggerInterface $logger
     ) {
         $this->client = $client;
         $this->connectionPool = $connectionPool;
-        $this->logger = $logger ?? new NullLogger();
+        $this->logger = $logger;
     }
 
-    public function getLastRequest() : RequestInterface
+    public function getClient(): ClientInterface
+    {
+        return $this->client;
+    }
+
+    public function getConnectionPool(): ConnectionPoolInterface
+    {
+        return $this->connectionPool;
+    }
+
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
+    }
+
+    public function setHeaders(array $headers): self
+    {
+        $this->headers = $headers;
+        return $this;
+    }
+
+    public function setUserInfo(string $user, string $password = ''): self
+    {
+        $this->user = $user;
+        $this->password = $password;
+        return $this;
+    }
+
+    public function getLastRequest(): RequestInterface
     {
         return $this->lastRequest;
     }
 
-    public function getLastResponse() : ResponseInterface
+    public function getLastResponse(): ResponseInterface
     {
         return $this->lastResponse;
     }
 
     public function sendRequest(RequestInterface $request): ResponseInterface
-    {
-        $this->lastRequest = $request;
-
-        // Get the host to be connected
+    {      
+        // Set the host
+        $path = $request->getUri()->getPath();
         $connection = $this->connectionPool->nextConnection();
+        $request = $request->withUri($connection->getUri()->withPath($path));
+        
+        // Set the global headers, if not already set
+        foreach ($this->headers as $name => $value) {
+            if (!$request->hasHeader($name)) {
+                $request = $request->withAddedHeader($name, $value);
+            }
+        }
+        // Set user info, if not already set
+        $uri = $request->getUri();
+        if (empty($uri->getUserInfo())) {
+            if (isset($this->user)) {
+                $request = $request->withUri($uri->withUserInfo($this->user, $this->password));
+            }
+        }
+        
+        $this->lastRequest = $request;
+        $this->logger->info(sprintf(
+            "Request: %s %s", 
+            $request->getMethod(),
+            (string) $request->getUri()
+        ));
 
         try {
             $response = $this->client->sendRequest($request);
+            $this->lastResponse = $response;
 
-            $this->logger->info(sprintf(
-                "Request: %s %s", 
-                $request->getMethod(),
-                $request->getUri()->getPath()
-            ));
             $this->logger->info(sprintf(
                 "Response: %s %s", 
                 $response->getStatusCode(),
                 $response->getBody()->getContents()
             ));
-            $this->lastResponse = $response;
-    
+
             return $response;
         } catch (NetworkExceptionInterface $e) {
             $this->logger->error($e->getMessage());

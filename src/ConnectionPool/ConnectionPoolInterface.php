@@ -16,5 +16,7 @@ namespace Elastic\Transport\ConnectionPool;
 
 interface ConnectionPoolInterface
 {
-    public function nextConnection(): ?Connection;
+    public function nextConnection(): Connection;
+
+    public function setHosts(array $hosts): void;
 }

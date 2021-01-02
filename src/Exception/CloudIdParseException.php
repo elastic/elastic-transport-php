@@ -12,16 +12,11 @@
  */
 declare(strict_types=1);
 
-namespace Elastic\Transport\ConnectionPool\Resurrect;
+namespace Elastic\Transport\Exception;
 
-use Psr\Http\Client\ClientInterface;
+use RuntimeException;
 
-abstract class AbstractResurrect implements ResurrectInterface
+class CloudIdParseException extends RuntimeException implements TransportException
 {
-    protected $client;
 
-    public function setClient(ClientInterface $client): void
-    {
-        $this->client = $client;
-    }
 }

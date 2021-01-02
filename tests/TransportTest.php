@@ -24,14 +24,24 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Uri;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\Test\TestLogger;
 
-class TransportTest extends TestCase
+final class TransportTest extends TestCase
 {
+    private $mock;
+    private $handlerStack;
+    private $client;
+    private $connection;
+    private $connectionPool;
+    private $logger;
+    private $transport;
+
     public function setUp(): void
     {
         $this->mock = new MockHandler();
@@ -44,33 +54,16 @@ class TransportTest extends TestCase
             ->willReturn($this->connection);
 
         $this->logger = new TestLogger();
-
-        $this->transport = new Transport(
-            $this->client,
-            $this->connectionPool,
-            $this->logger
-        );
+        $this->transport = new Transport($this->client, $this->connectionPool, $this->logger);
     }
 
-    public function testConstructorWithClientAndConnectionPool()
-    {
-        $transport = new Transport(
-            $this->client,
-            $this->connectionPool
-        );
-
-        $this->assertInstanceOf(Transport::class, $transport);
-    }
-
-    public function testConstructorWithClientAndConnectionPoolAndLogger()
-    {
-        $this->assertInstanceOf(Transport::class, $this->transport);
-    }
-
-    public function testSendRequest()
+    public function testSendRequestWith200Response()
     {
         $expectedResponse = new Response(200);
         $this->mock->append($expectedResponse);
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
 
         $request = new Request('GET', '/');
         $response = $this->transport->sendRequest($request);
@@ -86,7 +79,11 @@ class TransportTest extends TestCase
         $this->mock->append($expectedException);
        
         try {
-            $this->transport->sendRequest(new Request('GET', '/'));
+            $this->connection->method('getUri')
+                ->willReturn(new Uri('http://localhost'));
+
+            $request = new Request('GET', '/');
+            $this->transport->sendRequest($request);
         } catch (NetworkExceptionInterface $e) {
             $this->assertTrue($this->logger->hasError([
                 'level'   => 'error',
@@ -102,7 +99,11 @@ class TransportTest extends TestCase
         $this->mock->append($expectedException);
         
         try {
-            $this->transport->sendRequest(new Request('GET', '/'));
+            $this->connection->method('getUri')
+                ->willReturn(new Uri('http://localhost'));
+            
+                $request = new Request('GET', '/');
+            $this->transport->sendRequest($request);
         } catch (ClientExceptionInterface $e) {
             $this->assertTrue($this->logger->hasError([
                 'level'   => 'error',
@@ -120,12 +121,15 @@ class TransportTest extends TestCase
         $expectedResponse = new Response($statusCode, ['X-Foo' => 'Bar'], $body);
         $this->mock->append($expectedResponse);
 
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
+
         $request = new Request('GET', '/');
         $response = $this->transport->sendRequest($request);
 
         $this->assertTrue($this->logger->hasInfo([
             'level'   => 'info',
-            'message' => 'Request: GET /',
+            'message' => 'Request: GET http://localhost/',
             'context' => []
         ]));
         $this->assertTrue($this->logger->hasInfo([
@@ -135,25 +139,96 @@ class TransportTest extends TestCase
         ]));
     }
 
-    public function testGetLastRequest()
+    public function testGetLastRequestWithoutPort()
     {
         $this->mock->append(new Response(200));
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
 
         $request = new Request('GET', '/');
         $this->transport->sendRequest($request);
 
-        $this->assertEquals($request, $this->transport->getLastRequest());
+        $this->assertInstanceOf(RequestInterface::class, $this->transport->getLastRequest());
+        $this->assertEquals('localhost', $this->transport->getLastRequest()->getUri()->getHost());
+        $this->assertEquals('http', $this->transport->getLastRequest()->getUri()->getScheme());
+        $this->assertEquals(null, $this->transport->getLastRequest()->getUri()->getPort());
+        $this->assertEquals('/', $this->transport->getLastRequest()->getUri()->getPath());
+    }
+
+    public function testGetLastRequestWithSpecificPort()
+    {
+        $this->mock->append(new Response(200));
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost:9200'));
+
+        $request = new Request('GET', '/');
+        $this->transport->sendRequest($request);
+
+        $this->assertInstanceOf(RequestInterface::class, $this->transport->getLastRequest());
+        $this->assertEquals('localhost', $this->transport->getLastRequest()->getUri()->getHost());
+        $this->assertEquals('http', $this->transport->getLastRequest()->getUri()->getScheme());
+        $this->assertEquals(9200, $this->transport->getLastRequest()->getUri()->getPort());
+        $this->assertEquals('/', $this->transport->getLastRequest()->getUri()->getPath());
     }
 
     public function testGetLastResponse()
     {
-        $expectedResponse = new Response(200, ['X-Foo' => 'Bar'], 'Hello, World');
+        $expectedResponse = new Response(200);
         $this->mock->append($expectedResponse);
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
 
         $request = new Request('GET', '/');
         $response = $this->transport->sendRequest($request);
 
         $this->assertEquals($response, $this->transport->getLastResponse());
         $this->assertEquals($expectedResponse, $this->transport->getLastResponse());
+    }
+
+    public function testSetUserInfo()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
+
+        $user = 'test';
+        $password = '1234567890';
+
+        $this->transport->setUserInfo($user, $password);
+
+        $request = new Request('GET', '/');
+        $response = $this->transport->sendRequest($request);
+
+        $this->assertEquals(
+            $user . ':' . $password,
+            $this->transport->getLastRequest()->getUri()->getUserInfo(),
+        );
+        $this->assertEquals(
+            'http://test:1234567890@localhost/',
+            (string) $this->transport->getLastRequest()->getUri()
+        );
+    }
+
+    public function testSetHeaders()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $headers = [ 'X-Foo' => 'Bar' ];
+        $this->transport->setHeaders($headers);
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
+        
+        $request = new Request('GET', '/');
+        $response = $this->transport->sendRequest($request);
+        
+        $this->assertTrue($this->transport->getLastRequest()->hasHeader('X-Foo'));
+        $this->assertEquals($headers['X-Foo'], $this->transport->getLastRequest()->getHeader('X-Foo')[0]);
     }
 }

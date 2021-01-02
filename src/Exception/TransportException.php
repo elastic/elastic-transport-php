@@ -12,32 +12,9 @@
  */
 declare(strict_types=1);
 
-namespace Elastic\Transport\ConnectionPool;
+namespace Elastic\Transport\Exception;
 
-use Psr\Http\Message\UriInterface;
-
-class Connection
+interface TransportException
 {
-    protected $uri;
-    protected $alive = true;
 
-    public function __construct(UriInterface $uri)
-    {
-        $this->uri = $uri;
-    }
-
-    public function markAlive(bool $alive)
-    {
-        $this->alive = true;
-    }
-
-    public function isAlive(): bool
-    {
-        return $this->alive;
-    }
-
-    public function getUri(): UriInterface
-    {
-        return $this->uri;
-    }
 }

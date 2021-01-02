@@ -18,33 +18,37 @@ use Elastic\Transport\ConnectionPool\Resurrect\FalseResurrect;
 use Elastic\Transport\ConnectionPool\Resurrect\ResurrectInterface;
 use Elastic\Transport\ConnectionPool\Selector\RoundRobin;
 use Elastic\Transport\ConnectionPool\Selector\SelectorInterface;
+use Elastic\Transport\Exception;
 use GuzzleHttp\Psr7\Uri;
 
 abstract class AbstractConnectionPool implements ConnectionPoolInterface
 {
     protected $connections = [];
-    protected $urls;
+    protected $hosts = [];
     protected $selector;
 
-    public function __construct(array $urls, SelectorInterface $selector = null, ResurrectInterface $resurrect = null)
-    {
-        $this->urls = $urls;
-        foreach ($urls as $url) {
-            $this->connections[] = new Connection(new Uri($url));
-        }
-        
-        $this->selector = $selector ?? new RoundRobin();
-        $this->selector->setConnections($this->connections);
-
-        $this->resurrect = $resurrect ?? new FalseResurrect();
+    public function __construct(SelectorInterface $selector = null, ResurrectInterface $resurrect = null)
+    {      
+        $this->selector = $selector ?? new RoundRobin;
+        $this->resurrect = $resurrect ?? new FalseResurrect;
     }
 
-    public function nextConnection(): ?Connection
+    public function setHosts(array $hosts): void
+    {
+        $this->hosts = $hosts;
+        $this->connections = [];
+        foreach ($hosts as $host) {
+            $this->connections[] = new Connection(new Uri($host));
+        }
+        $this->selector->setConnections($this->connections);
+    }
+
+    public function nextConnection(): Connection
     {
         $totConnections = count($this->connections);
         $dead = 0;
 
-        do {
+        while ($dead < $totConnections) {
             $next = $this->selector->nextConnection();
             if ($next->isAlive()) {
                 return $next;
@@ -54,8 +58,11 @@ abstract class AbstractConnectionPool implements ConnectionPoolInterface
                 return $next;
             }
             $dead++;
-        } while ($dead <= $totConnections);
+        }
 
-        return null;
+        throw new Exception\NoAliveException(sprintf(
+            'No alive connection. All the %d nodes seem to be down.',
+            $totConnections
+        ));
     }
 }

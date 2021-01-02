@@ -20,6 +20,4 @@ use Psr\Http\Client\ClientInterface;
 interface ResurrectInterface
 {
     public function ping(Connection $connection): bool;
-
-    public function setClient(ClientInterface $client): void;
 }
