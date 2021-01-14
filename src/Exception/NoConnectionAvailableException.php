@@ -12,13 +12,11 @@
  */
 declare(strict_types=1);
 
-namespace Elastic\Transport\ConnectionPool\Selector;
+namespace Elastic\Transport\Exception;
 
-use Elastic\Transport\ConnectionPool\Connection;
+use RuntimeException;
 
-interface SelectorInterface
-{  
-    public function nextConnection(): Connection;
+class NoConnectionAvailableException extends RuntimeException implements TransportException
+{
 
-    public function setConnections(array $connections): void;
 }

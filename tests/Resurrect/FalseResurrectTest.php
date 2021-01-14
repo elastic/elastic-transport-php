@@ -12,13 +12,22 @@
  */
 declare(strict_types=1);
 
-namespace Elastic\Transport\ConnectionPool\Selector;
+namespace Elastic\Transport\Test\Resurrect;
 
 use Elastic\Transport\ConnectionPool\Connection;
+use Elastic\Transport\ConnectionPool\Resurrect\FalseResurrect;
+use PHPUnit\Framework\TestCase;
 
-interface SelectorInterface
-{  
-    public function nextConnection(): Connection;
+final class FalseResurrectTest extends TestCase
+{
+    public function setUp(): void
+    {
+        $this->connection = $this->createStub(Connection::class);
+    }
 
-    public function setConnections(array $connections): void;
+    public function testPingIsFalse()
+    {
+        $resurrect = new FalseResurrect();
+        $this->assertFalse($resurrect->ping($this->connection));
+    }
 }

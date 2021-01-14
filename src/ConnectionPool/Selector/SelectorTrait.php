@@ -15,10 +15,22 @@ declare(strict_types=1);
 namespace Elastic\Transport\ConnectionPool\Selector;
 
 use Elastic\Transport\ConnectionPool\Connection;
+use Elastic\Transport\Exception\InvalidArrayException;
 
-interface SelectorInterface
-{  
-    public function nextConnection(): Connection;
+trait SelectorTrait
+{
+    protected $connections = [];
 
-    public function setConnections(array $connections): void;
+    public function setConnections(array $connections): void
+    {
+        foreach ($connections as $conn) {
+            if (!$conn instanceof Connection) {
+                throw new InvalidArrayException(sprintf(
+                    "The connections array must contain only %s objects",
+                    Connection::class
+                ));
+            }
+        }
+        $this->connections = $connections;
+    }
 }

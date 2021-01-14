@@ -15,18 +15,23 @@ declare(strict_types=1);
 namespace Elastic\Transport\ConnectionPool\Resurrect;
 
 use Elastic\Transport\ConnectionPool\Connection;
-use GuzzleHttp\Client as GuzzleClient;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\ClientExceptionInterface;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Psr7\Request;
 
 class ElasticsearchResurrect implements ResurrectInterface
 {
+    public function __construct(ClientInterface $client = null)
+    {
+        $this->client = $client ?? new GuzzleClient;
+    }
+
     public function ping(Connection $connection): bool
     {
-        $url = sprintf("%s:%s", $connection->getUrl(), $connection->getPort());
-
+        $request = new Request("HEAD", $connection->getUri());
         try {
-            $client = new GuzzleClient();
-            $response = $client->request('HEAD', $url);
+            $response = $this->client->sendRequest($request);
             return $response->getStatusCode() === 200;
         } catch (ClientExceptionInterface $e) {
             return false;

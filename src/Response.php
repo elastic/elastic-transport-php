@@ -27,6 +27,14 @@ class Response
     protected $serializer;
     protected $deserialized;
 
+    const CONTENT_TYPE = [
+        'application/json'     => JsonArraySerializer::class,
+        'application/x-ndjson' => NDJsonArraySerializer::class,
+        'text/xml'             => XmlSerializer::class,
+        'application/xml'      => XmlSerializer::class,
+        'text/plain'           => TextSerializer::class
+    ];
+
     public function __construct(ResponseInterface $response, SerializerInterface $serializer = null)
     {
         $this->response = $response;
@@ -39,17 +47,13 @@ class Response
         if (! $response->hasHeader('Content-Type')) {
             return;
         }
-        $contentType = $response->getHeaderLine('Content-Type');
-        if (strpos($contentType, 'application/json') !== false) {
-            $serializer = new JsonArraySerializer();
-        } elseif (strpos($contentType, 'application/x-ndjson') !== false) {
-            $serializer = new NDJsonArraySerializer();
-        } elseif (strpos($contentType, 'text/xml') !== false || strpos($contentType, 'applcation/xml') !== false) {
-            $serializer = new XmlSerializer();
-        } else {
-            $serializer = new TextSerializer();
+        foreach (self::CONTENT_TYPE as $type => $serializerName) {
+            if (strpos($response->getHeaderLine('Content-Type'), $type) !== false) {
+                $this->serializer = new $serializerName;
+                $this->deserialized = $this->serializer->deserialize($response);
+                break;
+            }
         }
-        $this->deserialized = $serializer->deserialize($response);
     }
 
     public function getResponse(): ResponseInterface

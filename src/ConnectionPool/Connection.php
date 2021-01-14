@@ -14,21 +14,27 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\ConnectionPool;
 
+use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\UriInterface;
+
+use function sprintf;
 
 class Connection
 {
     protected $uri;
     protected $alive = true;
 
-    public function __construct(UriInterface $uri)
+    public function __construct(string $host)
     {
-        $this->uri = $uri;
+        if (substr($host, 0, 5) !== 'http:' && substr($host, 0, 6) !== 'https:') {
+            $host = sprintf("http://%s", $host);
+        }
+        $this->uri = new Uri($host);
     }
 
     public function markAlive(bool $alive)
     {
-        $this->alive = true;
+        $this->alive = $alive;
     }
 
     public function isAlive(): bool

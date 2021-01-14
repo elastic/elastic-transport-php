@@ -15,26 +15,27 @@ declare(strict_types=1);
 namespace Elastic\Transport\ConnectionPool\Selector;
 
 use Elastic\Transport\ConnectionPool\Connection;
+use Elastic\Transport\Exception\InvalidArrayException;
+use Elastic\Transport\Exception\NoConnectionAvailableException;
 
 class RoundRobin implements SelectorInterface
 {
-    public function nextConnection(): ?Connection
+    use SelectorTrait;
+
+    public function nextConnection(): Connection
     {
-        $next = next($this->connections);
-        if (false === $next) {
-            return reset($this->connections);
+        if (empty($this->connections)) {
+            $className = substr(__CLASS__, strrpos(__CLASS__, '\\') + 1);
+            throw new NoConnectionAvailableException(sprintf(
+                "No connection available. Please use %s::setConnections() before calling %s::nextConnection().",
+                $className,
+                $className
+            ));
         }
-        return $next;
-    }
-
-    public function setConnections(array $connections): void
-    {
-        $this->connections = $connections;
-    }
-
-    public function getConnection(): ?Connection
-    {
         $current = current($this->connections);
-        return $current instanceof Connection ? $current : null;
-    }
+        if (false === next($this->connections)) {
+            reset($this->connections);
+        }
+        return $current;
+    }   
 }

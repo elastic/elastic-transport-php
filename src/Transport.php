@@ -32,6 +32,7 @@ final class Transport implements ClientInterface
     private $headers = [];
     private $user;
     private $password;
+    private $hosts;
 
     public function __construct(
         ClientInterface $client,
@@ -85,7 +86,7 @@ final class Transport implements ClientInterface
     {      
         // Set the host
         $path = $request->getUri()->getPath();
-        $connection = $this->connectionPool->nextConnection();
+        $connection = $this->connectionPool->nextConnection($this->hosts);
         $request = $request->withUri($connection->getUri()->withPath($path));
         
         // Set the global headers, if not already set
