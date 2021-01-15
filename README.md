@@ -89,7 +89,7 @@ It uses the following default values: [RoundRobin](src/ConnectionPool/Selector/R
 The [Round-robin](https://en.wikipedia.org/wiki/Round-robin_scheduling) algorithm select the nodes in
 order*, from the first node in the array to the latest. When arrivedto the latest nodes, it will start again from the first. 
 
-* **NOTE**: the order of the nodes is randomized at runtime to maximize the usage of all the hosts.
+\* **NOTE**: the order of the nodes is randomized at runtime to maximize the usage of all the hosts.
 
 ## Use a custom Selector
 
