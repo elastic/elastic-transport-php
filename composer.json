@@ -1,7 +1,7 @@
 {
-    "name": "elastic/elastic-transport-php",
+    "name": "elastic/transport",
     "type": "library",
-    "description": "HTTP transport library for Elastic products",
+    "description": "HTTP transport PHP library for Elastic products",
     "keywords": [
         "http",
         "transport",
