@@ -1,4 +1,8 @@
-# HTTP transport layer for Elastic PHP clients
+<img align="right" width="auto" height="auto" src="https://www.elastic.co/static-res/images/elastic-logo-200.png"/>
+
+# HTTP transport for Elastic PHP clients
+
+[![Build status](https://github.com/elastic/elastic-transport-php/workflows/Test/badge.svg)](https://github.com/elastic/elastic-transport-php/actions)
 
 This is a HTTP transport PHP library for communicate with [Elastic](https://www.elastic.co/)
 products, like [Elasticsearch](https://github.com/elastic/elasticsearch).
