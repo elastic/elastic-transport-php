@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace Elastic\Transport\Test;
 
 use Elastic\Transport\ConnectionPool\Connection;
-use Elastic\Transport\ConnectionPool\SimpleConnectionPool;
+use Elastic\Transport\ConnectionPool\ConnectionPoolInterface;
 use Elastic\Transport\Transport;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
@@ -49,7 +49,7 @@ final class TransportTest extends TestCase
         $this->client = new Client(['handler' => $this->handlerStack]);
 
         $this->connection = $this->createStub(Connection::class);
-        $this->connectionPool = $this->createStub(SimpleConnectionPool::class);
+        $this->connectionPool = $this->createStub(ConnectionPoolInterface::class);
         $this->connectionPool->method('nextConnection')
             ->willReturn($this->connection);
 
@@ -111,6 +111,34 @@ final class TransportTest extends TestCase
                 'context' => []
             ]));
         }
+    }
+
+    public function testSendRequestWithEmptyHost()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
+
+        $request = new Request('GET', '/');
+        $response = $this->transport->sendRequest($request);
+
+        $lastRequest = $this->transport->getLastRequest();
+        $this->assertEquals('localhost', $lastRequest->getUri()->getHost());
+    }
+
+    public function testSendRequestWithHost()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $request = new Request('GET', 'http://domain/path');
+        $response = $this->transport->sendRequest($request);
+
+        $lastRequest = $this->transport->getLastRequest();
+        $this->assertEquals('domain', $lastRequest->getUri()->getHost());
+        $this->assertEquals('/path', $lastRequest->getUri()->getPath());
     }
 
     public function testLoggerWithSendRequest()

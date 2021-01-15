@@ -15,10 +15,10 @@ declare(strict_types=1);
 namespace Elastic\Transport\Test\Resurrect;
 
 use Elastic\Transport\ConnectionPool\Connection;
-use Elastic\Transport\ConnectionPool\Resurrect\FalseResurrect;
+use Elastic\Transport\ConnectionPool\Resurrect\NoResurrect;
 use PHPUnit\Framework\TestCase;
 
-final class FalseResurrectTest extends TestCase
+final class NoResurrectTest extends TestCase
 {
     public function setUp(): void
     {
@@ -27,7 +27,7 @@ final class FalseResurrectTest extends TestCase
 
     public function testPingIsFalse()
     {
-        $resurrect = new FalseResurrect();
+        $resurrect = new NoResurrect();
         $this->assertFalse($resurrect->ping($this->connection));
     }
 }

@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\ConnectionPool;
 
-use Elastic\Transport\ConnectionPool\Resurrect\FalseResurrect;
+use Elastic\Transport\ConnectionPool\Resurrect\NoResurrect;
 use Elastic\Transport\ConnectionPool\Resurrect\ResurrectInterface;
 use Elastic\Transport\ConnectionPool\Selector\RoundRobin;
 use Elastic\Transport\ConnectionPool\Selector\SelectorInterface;
@@ -29,7 +29,7 @@ class SimpleConnectionPool implements ConnectionPoolInterface
     public function __construct(SelectorInterface $selector = null, ResurrectInterface $resurrect = null)
     {   
         $this->selector = $selector ?? new RoundRobin;
-        $this->resurrect = $resurrect ?? new FalseResurrect;
+        $this->resurrect = $resurrect ?? new NoResurrect;
     }
 
     public function setHosts(array $hosts): void
