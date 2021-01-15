@@ -11,7 +11,7 @@
     ],
     "license": "Apache-2.0",
     "require": {
-        "php": ">=7.3",
+        "php": "^7.3|^8.0",
         "psr/http-client": "^1.0",
         "psr/http-message": "^1.0",
         "psr/log": "^1.1",
@@ -29,5 +29,10 @@
         "psr-4": {
             "Elastic\\Transport\\Test\\" : "tests/"
         }
+    },
+    "scripts": {
+        "test": [
+          "vendor/bin/phpunit"
+        ]
     }
 }
