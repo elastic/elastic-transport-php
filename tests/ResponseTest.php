@@ -14,14 +14,20 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Test;
 
+use Elastic\Transport\Exception\UnknownContentTypeException;
 use Elastic\Transport\Response;
+use Elastic\Transport\Serializer\CsvSerializer;
 use Elastic\Transport\Serializer\JsonArraySerializer;
 use Elastic\Transport\Serializer\NDJsonArraySerializer;
+use Elastic\Transport\Serializer\SerializerInterface;
 use Elastic\Transport\Serializer\TextSerializer;
 use Elastic\Transport\Serializer\XmlSerializer;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
+use SimpleXMLElement;
+
+use function PHPUnit\Framework\assertInstanceOf;
 
 final class ResponseTest extends TestCase
 {
@@ -33,7 +39,7 @@ final class ResponseTest extends TestCase
             ->willReturn($this->stream);
     }
 
-    public function testConstructorWithoutContentTypeResponse()
+    public function testConstructorWithoutContentTypeHeader()
     {
         $this->psr7Response->method('hasHeader')
             ->with($this->equalTo('Content-Type'))
@@ -51,7 +57,8 @@ final class ResponseTest extends TestCase
             ['application/x-ndjson', NDJsonArraySerializer::class, "{\"foo\":\"bar\"}\n{}\n"],
             ['application/xml', XmlSerializer::class, '<?xml version="1.0"?><document></document>'],
             ['text/xml', XmlSerializer::class, '<?xml version="1.0"?><document></document>'],
-            ['text/plain', TextSerializer::class, 'Hello World!']
+            ['text/plain', TextSerializer::class, 'Hello World!'],
+            ['text/csv', CsvSerializer::class, "1,2,3\n4,5,6"]
         ];
     }
 
@@ -86,11 +93,57 @@ final class ResponseTest extends TestCase
             ->with($this->equalTo('Content-Type'))
             ->willReturn('xxx');
 
-        $this->stream->method('getContents')
-            ->willReturn('yyy');
+        $this->expectException(UnknownContentTypeException::class);
+        $response = new Response($this->psr7Response);
+    }
+
+    public function testGetSerializerWithDefault()
+    {
+        $this->psr7Response->method('hasHeader')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn(true);
+
+        $this->psr7Response->method('getHeaderLine')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn('application/json');
 
         $response = new Response($this->psr7Response);
-        $this->assertInstanceOf(Response::class, $response);
-        $this->assertNull($response->getSerializer());
+        $this->assertInstanceOf(JsonArraySerializer::class, $response->getSerializer());
+    }
+
+    public function testGetSerializerWithCustomJsonSerializer()
+    {
+        $this->psr7Response->method('hasHeader')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn(true);
+
+        $this->psr7Response->method('getHeaderLine')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn('application/json');
+
+        $customSerializer = $this->createStub(SerializerInterface::class);
+        $contentType = [
+            'application/json' => $customSerializer
+        ];
+
+        $response = new Response($this->psr7Response, $contentType);
+        $this->assertEquals($customSerializer, $response->getSerializer());
+    }
+
+    public function testGetResponseWithArrayJson()
+    {
+        $this->psr7Response->method('hasHeader')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn(true);
+
+        $this->psr7Response->method('getHeaderLine')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn('application/json');
+
+        $this->stream->method('getContents')
+            ->willReturn('{"foo":"bar"}');
+
+        $response = new Response($this->psr7Response);
+        $this->assertEquals(['foo' => 'bar'], $response->getResponse());
     }
 }

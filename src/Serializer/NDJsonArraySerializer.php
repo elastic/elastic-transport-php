@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Elastic\Transport\Serializer;
 
 use Elastic\Transport\Exception\InvalidJsonException;
-use Elastic\Transport\Exception\NoContentTypeException;
 use JsonException;
 use Psr\Http\Message\ResponseInterface;
 

@@ -16,7 +16,7 @@ namespace Elastic\Transport\Exception;
 
 use RuntimeException;
 
-class NoContentTypeException extends RuntimeException implements TransportException
+class UnknownContentTypeException extends RuntimeException implements TransportException
 {
 
 }
