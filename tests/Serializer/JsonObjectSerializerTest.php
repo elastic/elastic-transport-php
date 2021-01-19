@@ -16,8 +16,6 @@ namespace Elastic\Transport\Test\Serializer;
 
 use Elastic\Transport\Serializer\JsonObjectSerializer;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 use stdClass;
 
 final class JsonObjectSerializerTest extends TestCase
@@ -25,11 +23,6 @@ final class JsonObjectSerializerTest extends TestCase
     public function setUp(): void
     {
         $this->serializer = new JsonObjectSerializer();
-        $this->request = $this->createStub(ResponseInterface::class);
-        $this->stream = $this->createStub(StreamInterface::class);
-
-        $this->request->method('getBody')
-            ->willReturn($this->stream);
     }
 
     public function testDeserialize()
@@ -42,10 +35,7 @@ final class JsonObjectSerializerTest extends TestCase
 }
 EOT;
 
-        $this->stream->method('getContents')
-            ->willReturn($json);
-
-        $result = $this->serializer->deserialize($this->request);
+        $result = $this->serializer->deserialize($json);
         $this->assertInstanceOf(stdClass::class, $result);
         $this->assertEquals('Apple', $result->fruit);
         $this->assertEquals('Large', $result->size);

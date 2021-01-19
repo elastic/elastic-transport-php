@@ -16,8 +16,6 @@ namespace Elastic\Transport\Test\Serializer;
 
 use Elastic\Transport\Serializer\NDJsonObjectSerializer;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 use stdClass;
 
 final class NDJsonObjectSerializerTest extends TestCase
@@ -25,11 +23,6 @@ final class NDJsonObjectSerializerTest extends TestCase
     public function setUp(): void
     {
         $this->serializer = new NDJsonObjectSerializer();
-        $this->request = $this->createStub(ResponseInterface::class);
-        $this->stream = $this->createStub(StreamInterface::class);
-
-        $this->request->method('getBody')
-            ->willReturn($this->stream);
 
         $this->json = <<<'EOT'
 {"index":{"_index":"test","_id":"1"}}
@@ -41,10 +34,7 @@ EOT;
 
     public function testDeserialize()
     {
-        $this->stream->method('getContents')
-            ->willReturn($this->json);
-
-        $result = $this->serializer->deserialize($this->request);
+        $result = $this->serializer->deserialize($this->json);
         $this->assertIsArray($result);
         foreach ($result as $res) {
             $this->assertInstanceOf(stdClass::class, $res);

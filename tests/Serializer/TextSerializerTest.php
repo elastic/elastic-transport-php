@@ -16,36 +16,24 @@ namespace Elastic\Transport\Test\Serializer;
 
 use Elastic\Transport\Serializer\TextSerializer;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 
 final class TextSerializerTest extends TestCase
 {
     public function setUp(): void
     {
         $this->serializer = new TextSerializer();
-        $this->request = $this->createStub(ResponseInterface::class);
-        $this->stream = $this->createStub(StreamInterface::class);
-
-        $this->request->method('getBody')
-            ->willReturn($this->stream);
-
-        $this->body = 'Hello World!';
+        $this->data = 'Hello World!';
     }
 
     public function testDeserialize()
     {
-        $this->stream->method('getContents')
-            ->willReturn($this->body);
-
-        $result = $this->serializer->deserialize($this->request);
-        $this->assertEquals($this->body, $result);
+        $result = $this->serializer->deserialize($this->data);
+        $this->assertEquals($this->data, $result);
     }
 
     public function testSerialize()
     {
-        $data = $this->body;
-        $result = $this->serializer->serialize($data);
-        $this->assertEquals($this->body, $result);
+        $result = $this->serializer->serialize($this->data);
+        $this->assertEquals($this->data, $result);
     }
 }

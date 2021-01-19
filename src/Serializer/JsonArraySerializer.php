@@ -16,7 +16,6 @@ namespace Elastic\Transport\Serializer;
 
 use Elastic\Transport\Exception\InvalidJsonException;
 use JsonException;
-use Psr\Http\Message\ResponseInterface;
 
 use function json_decode;
 use function json_encode;
@@ -42,10 +41,10 @@ class JsonArraySerializer implements SerializerInterface
     /**
      * @return array
      */
-    public function deserialize(ResponseInterface $response)
+    public function deserialize(string $data)
     {
         try {
-            return json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
+            return json_decode($data, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             throw new InvalidJsonException(sprintf(
                 "Not a valid Json: %s", 

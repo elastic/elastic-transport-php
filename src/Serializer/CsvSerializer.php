@@ -14,8 +14,6 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Serializer;
 
-use Psr\Http\Message\ResponseInterface;
-
 use function explode;
 use function str_getcsv;
 use function substr;
@@ -34,10 +32,10 @@ class CsvSerializer implements SerializerInterface
     /**
      * @return array
      */
-    public function deserialize(ResponseInterface $response)
+    public function deserialize(string $data)
     {
         $result = [];
-        foreach (explode("\n", $response->getBody()->getContents()) as $row) {
+        foreach (explode("\n", $data) as $row) {
             $result[] = str_getcsv($row);
         }
         return $result;

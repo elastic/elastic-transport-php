@@ -16,7 +16,6 @@ namespace Elastic\Transport\Serializer;
 
 use Elastic\Transport\Exception\InvalidJsonException;
 use JsonException;
-use Psr\Http\Message\ResponseInterface;
 
 use function json_decode;
 use function sprintf;
@@ -26,10 +25,10 @@ class JsonObjectSerializer extends JsonArraySerializer
     /**
      * @return object
      */
-    public function deserialize(ResponseInterface $response)
+    public function deserialize(string $data)
     {
         try {
-            return json_decode($response->getBody()->getContents(), false, 512, JSON_THROW_ON_ERROR);
+            return json_decode($data, false, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             throw new InvalidJsonException(sprintf(
                 "Not a valid Json: %s", 

@@ -25,11 +25,6 @@ final class XmlSerializerTest extends TestCase
     public function setUp(): void
     {
         $this->serializer = new XmlSerializer();
-        $this->request = $this->createStub(ResponseInterface::class);
-        $this->stream = $this->createStub(StreamInterface::class);
-
-        $this->request->method('getBody')
-            ->willReturn($this->stream);
         
         $this->xml = <<<'EOT'
 <?xml version="1.0"?>
@@ -43,10 +38,7 @@ EOT;
 
     public function testDeserialize()
     {
-        $this->stream->method('getContents')
-            ->willReturn($this->xml);
-
-        $result = $this->serializer->deserialize($this->request);
+        $result = $this->serializer->deserialize($this->xml);
         $this->assertInstanceOf(SimpleXMLElement::class, $result);
         $this->assertEquals('login', $result->cmd);
         $this->assertEquals('Richard', $result->login);

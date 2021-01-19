@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Elastic\Transport\Serializer;
 
 use Elastic\Transport\Exception\InvalidXmlException;
-use Psr\Http\Message\ResponseInterface;
 use SimpleXMLElement;
 
 use function implode;
@@ -38,9 +37,12 @@ class XmlSerializer implements SerializerInterface
         ));
     }
 
-    public function deserialize(ResponseInterface $response): SimpleXMLElement
+    /**
+     * @return SimpleXMLElement
+     */
+    public function deserialize(string $data)
     {
-        $result = simplexml_load_string($response->getBody()->getContents());
+        $result = simplexml_load_string($data);
         if (false === $result) {
             $errors = libxml_get_errors();
             libxml_clear_errors();

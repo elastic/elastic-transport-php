@@ -14,11 +14,9 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Serializer;
 
-use Psr\Http\Message\ResponseInterface;
-
 interface SerializerInterface
 {
     public function serialize($data): string;
 
-    public function deserialize(ResponseInterface $response);
+    public function deserialize(string $data);
 }

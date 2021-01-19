@@ -14,8 +14,6 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Serializer;
 
-use Psr\Http\Message\ResponseInterface;
-
 class TextSerializer implements SerializerInterface
 {
     public function serialize($data): string
@@ -23,8 +21,11 @@ class TextSerializer implements SerializerInterface
         return (string) $data;
     }
 
-    public function deserialize(ResponseInterface $response): string
+    /**
+     * @return string
+     */
+    public function deserialize(string $data)
     {
-        return $response->getBody()->getContents();
+        return $data;
     }
 }

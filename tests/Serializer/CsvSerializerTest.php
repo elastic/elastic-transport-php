@@ -16,19 +16,12 @@ namespace Elastic\Transport\Test\Serializer;
 
 use Elastic\Transport\Serializer\CsvSerializer;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 
 final class CsvSerializerTest extends TestCase
 {
     public function setUp(): void
     {
         $this->serializer = new CsvSerializer();
-        $this->request = $this->createStub(ResponseInterface::class);
-        $this->stream = $this->createStub(StreamInterface::class);
-
-        $this->request->method('getBody')
-            ->willReturn($this->stream);
     }
 
     public function testDeserialize()
@@ -38,10 +31,7 @@ final class CsvSerializerTest extends TestCase
 4,5,6
 EOT;
 
-        $this->stream->method('getContents')
-            ->willReturn($csv);
-
-        $result = $this->serializer->deserialize($this->request);
+        $result = $this->serializer->deserialize($csv);
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
         $this->assertEquals([1,2,3], $result[0]);

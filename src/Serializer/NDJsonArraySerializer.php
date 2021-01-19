@@ -16,7 +16,6 @@ namespace Elastic\Transport\Serializer;
 
 use Elastic\Transport\Exception\InvalidJsonException;
 use JsonException;
-use Psr\Http\Message\ResponseInterface;
 
 use function explode;
 use function json_decode;
@@ -46,10 +45,12 @@ class NDJsonArraySerializer implements SerializerInterface
         return $result;
     }
 
-    public function deserialize(ResponseInterface $response): array
+    /**
+     * @return array
+     */
+    public function deserialize(string $data)
     {
-        $content = $response->getBody()->getContents();
-        $array = explode(strpos($content, "\r\n") !== false ? "\r\n" : "\n", $content);
+        $array = explode(strpos($data, "\r\n") !== false ? "\r\n" : "\n", $data);
         $result = [];
         foreach ($array as $json) {
             if (empty($json)) {
