@@ -28,8 +28,8 @@ class TransportBuilder
     protected $client;
     protected $connectionPool;
     protected $logger;
-    protected $hosts;
-    protected $headers;
+    protected $hosts = [];
+    protected $headers = [];
     protected $user;
     protected $password; 
 
@@ -62,15 +62,14 @@ class TransportBuilder
         return $this;
     }
 
+    public function getHosts(): array
+    {
+        return $this->hosts;
+    }
+
     public function setCloudId(string $cloudId): self
     {
         $this->hosts = [$this->parseElasticCloudId($cloudId)];
-        return $this;
-    }
-
-    public function setApiKey(string $apiKey): self
-    {
-        $this->headers["Authorization"] = sprintf("ApiKey %s", $apiKey);
         return $this;
     }
 
@@ -79,6 +78,17 @@ class TransportBuilder
         $this->user = $user;
         $this->password = $password;
         return $this;
+    }
+
+    public function setHeaders(array $headers): self
+    {
+        $this->headers = $headers;
+        return $this;
+    }
+
+    public function getHeaders(): array
+    {
+        return $this->headers;
     }
 
     public function build(): Transport
@@ -95,7 +105,7 @@ class TransportBuilder
             $transport->setHeaders($this->headers);
         }
         if (!empty($this->user)) {
-            $transport->setUserInfo($this->user, $this->password ?? '');
+            $transport->setUserInfo($this->user, $this->password);
         }
         return $transport;
     }
