@@ -16,7 +16,7 @@ namespace Elastic\Transport\Serializer;
 
 class TextSerializer implements SerializerInterface
 {
-    public function serialize($data): string
+    public static function serialize($data): string
     {
         return (string) $data;
     }
@@ -24,7 +24,7 @@ class TextSerializer implements SerializerInterface
     /**
      * @return string
      */
-    public function deserialize(string $data)
+    public static function deserialize(string $data)
     {
         return $data;
     }

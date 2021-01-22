@@ -25,7 +25,7 @@ class JsonObjectSerializer extends JsonArraySerializer
     /**
      * @return object
      */
-    public function deserialize(string $data)
+    public static function deserialize(string $data)
     {
         try {
             return json_decode($data, false, 512, JSON_THROW_ON_ERROR);

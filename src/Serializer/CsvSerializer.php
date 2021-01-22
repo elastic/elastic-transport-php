@@ -20,7 +20,7 @@ use function substr;
 
 class CsvSerializer implements SerializerInterface
 {
-    public function serialize($data): string
+    public static function serialize($data): string
     {
         $result = '';
         foreach ($data as $row) {
@@ -32,7 +32,7 @@ class CsvSerializer implements SerializerInterface
     /**
      * @return array
      */
-    public function deserialize(string $data)
+    public static function deserialize(string $data)
     {
         $result = [];
         foreach (explode("\n", $data) as $row) {

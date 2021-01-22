@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Serializer;
 
+use ArrayIterator;
 use Elastic\Transport\Exception\InvalidJsonException;
 use JsonException;
 
@@ -25,12 +26,12 @@ use function strpos;
 class NDJsonObjectSerializer extends NDJsonArraySerializer
 {
     /**
-     * @return object[]
+     * @return ArrayIterator
      */
-    public function deserialize(string $data)
+    public static function deserialize(string $data)
     {
         $array = explode(strpos($data, "\r\n") !== false ? "\r\n" : "\n", $data);
-        $result = [];
+        $result = new ArrayIterator();
         foreach ($array as $json) {
             if (empty($json)) {
                 continue;

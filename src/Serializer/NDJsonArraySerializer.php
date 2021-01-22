@@ -25,7 +25,7 @@ use function strpos;
 
 class NDJsonArraySerializer implements SerializerInterface
 {
-    public function serialize($rows): string
+    public static function serialize($rows): string
     {
         $result = '';
         foreach ($rows as $row) {
@@ -48,7 +48,7 @@ class NDJsonArraySerializer implements SerializerInterface
     /**
      * @return array
      */
-    public function deserialize(string $data)
+    public static function deserialize(string $data)
     {
         $array = explode(strpos($data, "\r\n") !== false ? "\r\n" : "\n", $data);
         $result = [];

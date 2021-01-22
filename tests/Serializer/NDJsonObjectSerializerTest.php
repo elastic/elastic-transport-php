@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Test\Serializer;
 
+use ArrayAccess;
 use Elastic\Transport\Serializer\NDJsonObjectSerializer;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -22,8 +23,6 @@ final class NDJsonObjectSerializerTest extends TestCase
 {
     public function setUp(): void
     {
-        $this->serializer = new NDJsonObjectSerializer();
-
         $this->json = <<<'EOT'
 {"index":{"_index":"test","_id":"1"}}
 {"field1":"value1"}
@@ -34,8 +33,8 @@ EOT;
 
     public function testDeserialize()
     {
-        $result = $this->serializer->deserialize($this->json);
-        $this->assertIsArray($result);
+        $result = NDJsonObjectSerializer::deserialize($this->json);
+        $this->assertInstanceOf(ArrayAccess::class, $result);
         foreach ($result as $res) {
             $this->assertInstanceOf(stdClass::class, $res);
         }
@@ -63,7 +62,7 @@ EOT;
                 ]
             ]
         ];
-        $result = $this->serializer->serialize($data);
+        $result = NDJsonObjectSerializer::serialize($data);
         $this->assertEquals($this->json, $result);
     }
 }

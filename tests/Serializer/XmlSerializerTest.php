@@ -23,9 +23,7 @@ use SimpleXMLElement;
 final class XmlSerializerTest extends TestCase
 {
     public function setUp(): void
-    {
-        $this->serializer = new XmlSerializer();
-        
+    {   
         $this->xml = <<<'EOT'
 <?xml version="1.0"?>
 <document>
@@ -38,7 +36,7 @@ EOT;
 
     public function testDeserialize()
     {
-        $result = $this->serializer->deserialize($this->xml);
+        $result = XmlSerializer::deserialize($this->xml);
         $this->assertInstanceOf(SimpleXMLElement::class, $result);
         $this->assertEquals('login', $result->cmd);
         $this->assertEquals('Richard', $result->login);
@@ -47,7 +45,7 @@ EOT;
     public function testSerialize()
     {
         $data = new SimpleXMLElement($this->xml);
-        $result = $this->serializer->serialize($data);
+        $result = XmlSerializer::serialize($data);
         $this->assertEquals($this->xml, $result);
     }
 }

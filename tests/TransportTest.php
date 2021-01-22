@@ -145,7 +145,6 @@ final class TransportTest extends TestCase
     {
         $statusCode = 200;
         $body = 'Hello, World';
-
         $expectedResponse = new Response($statusCode, ['X-Foo' => 'Bar'], $body);
         $this->mock->append($expectedResponse);
 
@@ -157,12 +156,22 @@ final class TransportTest extends TestCase
 
         $this->assertTrue($this->logger->hasInfo([
             'level'   => 'info',
-            'message' => 'Request: GET http://localhost/',
+            'message' => "Request: GET http://localhost/\nBody: ",
+            'context' => []
+        ]));
+        $this->assertTrue($this->logger->hasDebug([
+            'level'   => 'debug',
+            'message' => 'Request Headers: {"Host":["localhost"]}',
             'context' => []
         ]));
         $this->assertTrue($this->logger->hasInfo([
             'level'   => 'info',
-            'message' => sprintf("Response: %s %s", $statusCode, $body),
+            'message' => sprintf("Response: %s\nBody: %s", $statusCode, $body),
+            'context' => []
+        ]));
+        $this->assertTrue($this->logger->hasDebug([
+            'level'   => 'debug',
+            'message' => 'Response Headers: {"X-Foo":["Bar"]}',
             'context' => []
         ]));
     }

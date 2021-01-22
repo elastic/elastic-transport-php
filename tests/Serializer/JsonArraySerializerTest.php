@@ -19,11 +19,6 @@ use PHPUnit\Framework\TestCase;
 
 final class JsonArraySerializerTest extends TestCase
 {
-    public function setUp(): void
-    {
-        $this->serializer = new JsonArraySerializer();
-    }
-
     public function testDeserialize()
     {
         $json = <<<'EOT'
@@ -34,7 +29,7 @@ final class JsonArraySerializerTest extends TestCase
 }
 EOT;
 
-        $result = $this->serializer->deserialize($json);
+        $result = JsonArraySerializer::deserialize($json);
         $this->assertIsArray($result);
         $this->assertEquals('Apple', $result['fruit']);
         $this->assertEquals('Large', $result['size']);
@@ -49,7 +44,7 @@ EOT;
             'size' => 'Large',
             'color' => 'Red'
         ];
-        $result = $this->serializer->serialize($data);
+        $result = JsonArraySerializer::serialize($data);
         $this->assertEquals($json, $result);
     }
 
@@ -57,7 +52,7 @@ EOT;
     {
         $json = '{}';
         $data = [];
-        $result = $this->serializer->serialize($data);
+        $result = JsonArraySerializer::serialize($data);
         $this->assertEquals($json, $result);
     }
 }

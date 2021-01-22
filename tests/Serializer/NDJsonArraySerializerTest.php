@@ -21,8 +21,6 @@ final class NDJsonArraySerializerTest extends TestCase
 {
     public function setUp(): void
     {
-        $this->serializer = new NDJsonArraySerializer();
-
         $this->ndjson = <<<'EOT'
 {"index":{"_index":"test","_id":"1"}}
 {"field1":"value1"}
@@ -33,7 +31,7 @@ EOT;
 
     public function testDeserialize()
     {
-        $result = $this->serializer->deserialize($this->ndjson);
+        $result = NDJsonArraySerializer::deserialize($this->ndjson);
         $this->assertIsArray($result);
         $this->assertEquals('test', $result[0]['index']['_index']);
         $this->assertEquals('value1', $result[1]['field1']);
@@ -59,7 +57,7 @@ EOT;
                 ]
             ]
         ];
-        $result = $this->serializer->serialize($data);
+        $result = NDJsonArraySerializer::serialize($data);
         $this->assertEquals($this->ndjson, $result);
     }
 
@@ -87,7 +85,7 @@ EOT;
                 ]
             ]
         ];
-        $result = $this->serializer->serialize($data);
+        $result = NDJsonArraySerializer::serialize($data);
         $this->assertEquals($ndjson, $result);
     }
 }

@@ -26,7 +26,7 @@ use function sprintf;
 
 class XmlSerializer implements SerializerInterface
 {
-    public function serialize($data): string
+    public static function serialize($data): string
     {
         if ($data instanceof SimpleXMLElement) {
             return $data->asXML();
@@ -40,7 +40,7 @@ class XmlSerializer implements SerializerInterface
     /**
      * @return SimpleXMLElement
      */
-    public function deserialize(string $data)
+    public static function deserialize(string $data)
     {
         $result = simplexml_load_string($data);
         if (false === $result) {

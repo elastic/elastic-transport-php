@@ -21,19 +21,18 @@ final class TextSerializerTest extends TestCase
 {
     public function setUp(): void
     {
-        $this->serializer = new TextSerializer();
         $this->data = 'Hello World!';
     }
 
     public function testDeserialize()
     {
-        $result = $this->serializer->deserialize($this->data);
+        $result = TextSerializer::deserialize($this->data);
         $this->assertEquals($this->data, $result);
     }
 
     public function testSerialize()
     {
-        $result = $this->serializer->serialize($this->data);
+        $result = TextSerializer::serialize($this->data);
         $this->assertEquals($this->data, $result);
     }
 }

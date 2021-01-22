@@ -20,11 +20,6 @@ use stdClass;
 
 final class JsonObjectSerializerTest extends TestCase
 {
-    public function setUp(): void
-    {
-        $this->serializer = new JsonObjectSerializer();
-    }
-
     public function testDeserialize()
     {
         $json = <<<'EOT'
@@ -35,7 +30,7 @@ final class JsonObjectSerializerTest extends TestCase
 }
 EOT;
 
-        $result = $this->serializer->deserialize($json);
+        $result = JsonObjectSerializer::deserialize($json);
         $this->assertInstanceOf(stdClass::class, $result);
         $this->assertEquals('Apple', $result->fruit);
         $this->assertEquals('Large', $result->size);
@@ -51,7 +46,7 @@ EOT;
         $data->size = 'Large';
         $data->color = 'Red';
 
-        $result = $this->serializer->serialize($data);
+        $result = JsonObjectSerializer::serialize($data);
         $this->assertEquals($json, $result);
     }
 }

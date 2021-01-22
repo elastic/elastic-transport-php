@@ -23,7 +23,7 @@ use function sprintf;
 
 class JsonArraySerializer implements SerializerInterface
 {
-    public function serialize($data): string
+    public static function serialize($data): string
     {
         if (empty($data)) {
             return '{}';
@@ -41,7 +41,7 @@ class JsonArraySerializer implements SerializerInterface
     /**
      * @return array
      */
-    public function deserialize(string $data)
+    public static function deserialize(string $data)
     {
         try {
             return json_decode($data, true, 512, JSON_THROW_ON_ERROR);

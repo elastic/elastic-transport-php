@@ -19,11 +19,6 @@ use PHPUnit\Framework\TestCase;
 
 final class CsvSerializerTest extends TestCase
 {
-    public function setUp(): void
-    {
-        $this->serializer = new CsvSerializer();
-    }
-
     public function testDeserialize()
     {
         $csv = <<<'EOT'
@@ -31,7 +26,7 @@ final class CsvSerializerTest extends TestCase
 4,5,6
 EOT;
 
-        $result = $this->serializer->deserialize($csv);
+        $result = CsvSerializer::deserialize($csv);
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
         $this->assertEquals([1,2,3], $result[0]);
@@ -48,7 +43,7 @@ EOT;
             [1,2,3],
             [4,5,6]
         ];
-        $result = $this->serializer->serialize($data);
+        $result = CsvSerializer::serialize($data);
         $this->assertEquals($csv, $result);
     }
 
@@ -56,7 +51,7 @@ EOT;
     {
         $csv = '';
         $data = [];
-        $result = $this->serializer->serialize($data);
+        $result = CsvSerializer::serialize($data);
         $this->assertEquals($csv, $result);
     }
 }

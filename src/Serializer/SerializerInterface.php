@@ -16,7 +16,7 @@ namespace Elastic\Transport\Serializer;
 
 interface SerializerInterface
 {
-    public function serialize($data): string;
+    public static function serialize($data): string;
 
-    public function deserialize(string $data);
+    public static function deserialize(string $data);
 }

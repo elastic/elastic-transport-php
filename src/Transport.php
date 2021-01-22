@@ -22,6 +22,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
+use function json_encode;
 use function sprintf;
 
 final class Transport implements ClientInterface
@@ -106,19 +107,27 @@ final class Transport implements ClientInterface
         
         $this->lastRequest = $request;
         $this->logger->info(sprintf(
-            "Request: %s %s", 
+            "Request: %s %s\nBody: %s", 
             $request->getMethod(),
-            (string) $request->getUri()
+            (string) $request->getUri(),
+            $request->getBody()->getContents()
         ));
-
+        $this->logger->debug(sprintf(
+            "Request Headers: %s", 
+            json_encode($request->getHeaders())
+        ));
         try {
             $response = $this->client->sendRequest($request);
             $this->lastResponse = $response;
 
             $this->logger->info(sprintf(
-                "Response: %s %s", 
+                "Response: %d\nBody: %s", 
                 $response->getStatusCode(),
                 $response->getBody()->getContents()
+            ));
+            $this->logger->debug(sprintf(
+                "Response Headers: %s", 
+                json_encode($response->getHeaders())
             ));
 
             return $response;
