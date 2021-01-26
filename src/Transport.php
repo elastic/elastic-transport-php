@@ -94,7 +94,7 @@ final class Transport implements ClientInterface
         // Set the global headers, if not already set
         foreach ($this->headers as $name => $value) {
             if (!$request->hasHeader($name)) {
-                $request = $request->withAddedHeader($name, $value);
+                $request = $request->withHeader($name, $value);
             }
         }
         // Set user info, if not already set
