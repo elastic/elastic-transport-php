@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Elastic\Transport;
 
 use ArrayAccess;
+use Elastic\Transport\Exception\UndefinedPropertyException;
 use Elastic\Transport\Exception\UnknownContentTypeException;
 use Elastic\Transport\Serializer\CsvSerializer;
 use Elastic\Transport\Serializer\JsonArraySerializer;
@@ -28,8 +29,9 @@ use SimpleXMLElement;
 
 /**
  * Wraps a PSR-7 ResponseInterface offering helper to deserialize the body.
- * Implements the ArrayAccess to facilitate the access of the body contents
- * using an associative array.
+ * Implements the ArrayAccess to facilitate the access of the body content
+ * using an associative array. It uses __get() to access the body content as
+ * object properties.
  */
 class Response implements ArrayAccess
 {
@@ -171,16 +173,6 @@ class Response implements ArrayAccess
     }
 
     /**
-     * Converts the response body to StreamInterface
-     * 
-     * @see https://www.php-fig.org/psr/psr-7/#13-streams
-     */
-    public function asStream(): StreamInterface
-    {
-        return $this->response->getBody();
-    }
-
-    /**
      * Get the HTTP response as PSR-7 ResponseInterface
      * 
      * @see https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface
@@ -191,22 +183,17 @@ class Response implements ArrayAccess
     }
 
     /**
-     * Get the headers from the PSR-7 HTTP response
-     * 
-     * @see https://www.php-fig.org/psr/psr-7/#31-psrhttpmessagemessageinterface
+     * PHP magic method for accessing the response property
      */
-    public function getHeaders(): array
+    public function __get(string $name)
     {
-        return $this->response->getHeaders();
-    }
-
-    /**
-     * Get the status code from the PSR-7 HTTP response
-     * 
-     * @see https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface
-     */
-    public function getStatusCode(): int
-    {
-        return $this->response->getStatusCode();
+        $obj = $this->asObject();
+        if (isset($obj->$name)) {
+            return $obj->$name;
+        }
+        throw new UndefinedPropertyException(sprintf(
+            "The property %s does not exist in the response",
+            $name
+        ));
     }
 }

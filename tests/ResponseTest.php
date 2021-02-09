@@ -16,6 +16,7 @@ namespace Elastic\Transport\Test;
 
 use ArrayIterator;
 use Elastic\Transport\Exception\InvalidArrayException;
+use Elastic\Transport\Exception\UndefinedPropertyException;
 use Elastic\Transport\Exception\UnknownContentTypeException;
 use Elastic\Transport\Response;
 use PHPUnit\Framework\TestCase;
@@ -248,36 +249,11 @@ final class ResponseTest extends TestCase
         $this->assertEquals($body, (string) $this->response);
     }
 
-    public function testAsStream()
-    {
-        $this->assertInstanceOf(StreamInterface::class, $this->response->asStream());
-        $this->assertEquals($this->stream, $this->response->asStream());
-    }
-
     public function testGetResponse()
     {
         $psr7Response = $this->response->getResponse();
         $this->assertInstanceOf(ResponseInterface::class, $psr7Response);
         $this->assertEquals($psr7Response, $this->psr7Response);
-    }
-
-    public function testGetHeaders()
-    {
-        $headers = ['Foo' => ['Bar']];
-        $this->psr7Response->method('getHeaders')
-            ->willReturn($headers);
-
-        $this->assertIsArray($this->response->getHeaders());
-        $this->assertEquals($headers, $this->response->getHeaders());
-    }
-
-    public function testGetStatusCode()
-    {
-        $this->psr7Response->method('getStatusCode')
-            ->willReturn(200);
-        
-        $this->assertIsInt($this->response->getStatusCode());
-        $this->assertEquals(200, $this->response->getStatusCode());    
     }
 
     public function getArrayAccessData()
@@ -361,5 +337,38 @@ final class ResponseTest extends TestCase
     {
         $this->expectException(InvalidArrayException::class);
         unset($this->response['foo']);
+    }
+
+    public function testObjectAccess()
+    {
+        $this->psr7Response->method('hasHeader')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn(true);
+
+        $this->psr7Response->method('getHeaderLine')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn('application/json');
+
+        $this->stream->method('getContents')
+            ->willReturn('{ "foo" : "bar" }');
+
+        $this->assertEquals($this->response->foo, 'bar');
+    }
+
+    public function testObjectAccessThrowUndefinedPropertyException()
+    {
+        $this->psr7Response->method('hasHeader')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn(true);
+
+        $this->psr7Response->method('getHeaderLine')
+            ->with($this->equalTo('Content-Type'))
+            ->willReturn('application/json');
+
+        $this->stream->method('getContents')
+            ->willReturn('{ "foo" : "bar" }');
+
+        $this->expectException(UndefinedPropertyException::class);
+        $value = $this->response->bar;
     }
 }
