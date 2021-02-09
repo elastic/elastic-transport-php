@@ -251,14 +251,17 @@ final class TransportTest extends TestCase
         );
     }
 
-    public function testSetHeaders()
+    public function testSetHeader()
     {
         $expectedResponse = new Response(200);
         $this->mock->append($expectedResponse);
 
-        $headers = [ 'X-Foo' => 'Bar' ];
-        $this->transport->setHeaders($headers);
-
+        $headers = [
+            'X-Foo' => 'Bar'
+        ];
+        $this->transport->setHeader('X-Foo', $headers['X-Foo']);
+        $this->assertEquals($headers, $this->transport->getHeaders());
+        
         $this->connection->method('getUri')
             ->willReturn(new Uri('http://localhost'));
         

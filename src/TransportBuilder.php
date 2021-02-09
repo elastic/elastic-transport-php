@@ -29,9 +29,6 @@ class TransportBuilder
     protected $connectionPool;
     protected $logger;
     protected $hosts = [];
-    protected $headers = [];
-    protected $user;
-    protected $password; 
 
     public static function create(): TransportBuilder
     {
@@ -73,24 +70,6 @@ class TransportBuilder
         return $this;
     }
 
-    public function setUserInfo(string $user, string $password = ''): self
-    {
-        $this->user = $user;
-        $this->password = $password;
-        return $this;
-    }
-
-    public function setHeaders(array $headers): self
-    {
-        $this->headers = $headers;
-        return $this;
-    }
-
-    public function getHeaders(): array
-    {
-        return $this->headers;
-    }
-
     public function build(): Transport
     {
         $connectionPool = $this->connectionPool ?? new SimpleConnectionPool;
@@ -101,12 +80,6 @@ class TransportBuilder
             $connectionPool,
             $this->logger ?? new NullLogger
         );
-        if (!empty($this->headers)) {
-            $transport->setHeaders($this->headers);
-        }
-        if (!empty($this->user)) {
-            $transport->setUserInfo($this->user, $this->password);
-        }
         return $transport;
     }
 

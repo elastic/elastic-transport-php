@@ -84,17 +84,6 @@ final class TransportBuilderTest extends TestCase
         $this->assertEquals($hosts, $this->builder->getHosts());
     }
 
-    public function testSetHeaders()
-    {
-        $headers = [
-            'Authorization' => 'ApiKey xxx'
-        ];
-        $result = $this->builder->setHeaders($headers);
-
-        $this->assertInstanceOf(TransportBuilder::class, $result);
-        $this->assertEquals($headers, $this->builder->getHeaders());
-    }
-
     public function testSetInvalidCloudId()
     {
         $this->expectException(CloudIdParseException::class);
@@ -112,38 +101,8 @@ final class TransportBuilderTest extends TestCase
         $this->assertContains('https://cloud.elastic.co.aaa', $this->builder->getHosts());
     }
 
-    public function testSetUserInfoWithOnlyUser()
-    {
-        $result = $this->builder->setUserInfo('user');
-        $this->assertInstanceOf(TransportBuilder::class, $result);
-    }
-
-    public function testSetUserInfoWithUserAndPassword()
-    {
-        $result = $this->builder->setUserInfo('user', 'password');
-        $this->assertInstanceOf(TransportBuilder::class, $result);
-    }
-
     public function testBuildWithDefaultSettings()
     {
-        $this->assertInstanceOf(Transport::class, $this->builder->build());
-    }
-
-    public function testBuildWithUserSettings()
-    {
-        $this->builder->setUserInfo('user');
-        $this->assertInstanceOf(Transport::class, $this->builder->build());
-    }
-
-    public function testBuildWithUserAndPasswordSettings()
-    {
-        $this->builder->setUserInfo('user', 'password');
-        $this->assertInstanceOf(Transport::class, $this->builder->build());
-    }
-
-    public function testBuildWithHeaders()
-    {
-        $this->builder->setHeaders(['foo' => 'bar']);
         $this->assertInstanceOf(Transport::class, $this->builder->build());
     }
 }

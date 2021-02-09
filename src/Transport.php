@@ -59,10 +59,15 @@ final class Transport implements ClientInterface
         return $this->logger;
     }
 
-    public function setHeaders(array $headers): self
+    public function setHeader(string $name, string $value): self
     {
-        $this->headers = $headers;
+        $this->headers[$name] = $value;
         return $this;
+    }
+
+    public function getHeaders(): array
+    {
+        return $this->headers;
     }
 
     public function setUserInfo(string $user, string $password = ''): self
