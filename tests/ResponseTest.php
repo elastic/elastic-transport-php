@@ -99,10 +99,14 @@ final class ResponseTest extends TestCase
         $obj2[] = $obj1;
         $obj2[] = new stdClass();
 
+        $xml = '<?xml version="1.0" encoding="UTF-8"?><root><foo>bar</foo></root>';
+        $simpleXml = new SimpleXMLElement($xml);
+
         return [
             ['application/json', '{}', new stdClass()],
             ['application/json', '{"foo":"bar"}', $obj1],
-            ['application/x-ndjson', "{\"foo\":\"bar\"}\n{}\n", $obj2]
+            ['application/x-ndjson', "{\"foo\":\"bar\"}\n{}\n", $obj2],
+            ['application/xml', $xml, $simpleXml]
         ];
     }
 
@@ -149,65 +153,17 @@ final class ResponseTest extends TestCase
         $this->response->asObject();
     }
 
-    public function getContentTypeForXml()
-    {
-        return [
-            ['application/xml', '<?xml version="1.0"?><document></document>', new SimpleXMLElement('<document></document>')],
-            ['text/xml', '<?xml version="1.0"?><document></document>', new SimpleXMLElement('<document></document>')]
-        ];
-    }
-
-    /**
-     * @dataProvider getContentTypeForXml
-     */
-    public function testAsXml(string $type, string $body, SimpleXMLElement $asXml)
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(true);
-
-        $this->psr7Response->method('getHeaderLine')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn($type);
-
-        $this->stream->method('getContents')
-            ->willReturn($body);
-
-        $this->assertEquals($asXml, $this->response->asXml());
-    }
-
-    public function testAsXmlWithoutContentTypeThrowsException()
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(false);
-
-        $this->expectException(UnknownContentTypeException::class);
-        $this->response->asXml();
-    }
-
-    public function testAsXmlWithUnknownContentTypeThrowsException()
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(true);
-
-        $this->psr7Response->method('getHeaderLine')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn('xxx');
-
-        $this->expectException(UnknownContentTypeException::class);
-        $this->response->asXml();
-    }
-
     public function getContentTypeForString()
     {
+        $xml = '<?xml version="1.0" encoding="UTF-8"?><root><foo>bar</foo></root>';
+
         return [
             ['application/json', '{}', '{}'],
             ['application/json', '{"foo":"bar"}', '{"foo":"bar"}'],
             ['application/x-ndjson', "{\"foo\":\"bar\"}\n{}\n", "{\"foo\":\"bar\"}\n{}\n"],
             ['text/plain', 'Hello World!', 'Hello World!'],
             ['text/csv', "1,2,3\n4,5,6", "1,2,3\n4,5,6"],
+            ['application/xml', $xml, $xml],
             ['xxx', 'Hello World!', 'Hello World!']
         ];
     }
@@ -254,121 +210,5 @@ final class ResponseTest extends TestCase
         $psr7Response = $this->response->getResponse();
         $this->assertInstanceOf(ResponseInterface::class, $psr7Response);
         $this->assertEquals($psr7Response, $this->psr7Response);
-    }
-
-    public function getArrayAccessData()
-    {
-        return [
-            ['application/json', '{ "foo" : "bar" }', function($res){
-                return $res['foo'];
-            }, 'bar'],
-            ['application/json', '{ "foo" : "bar", "baz" : { "bug": "bao"}}', function($res){
-                return $res['baz']['bug'];
-            }, 'bao'],
-            ['application/x-ndjson', "{\"foo\":\"bar\"}\n{}\n", function($res){
-                return $res[0]['foo'];
-            }, 'bar'],
-            ['text/csv', "1,2,3\n4,5,6", function($res){
-                return $res[1][0];
-            }, '4']
-        ];
-    }
-    
-    /**
-     * @dataProvider getArrayAccessData
-     */
-    public function testArrayAccessWithValidContentType(string $type, string $body, callable $return, string $value)
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(true);
-
-        $this->psr7Response->method('getHeaderLine')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn($type);
-
-        $this->stream->method('getContents')
-            ->willReturn($body);
-        
-        $this->assertEquals($return($this->response), $value);
-    }
-
-    public function testArrayAccessWithUnknownContentTypeThrowsException()
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(true);
-
-        $this->psr7Response->method('getHeaderLine')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn('xxx');
-
-        $this->stream->method('getContents')
-            ->willReturn('yyy: zzz');
-        
-        $this->expectException(UnknownContentTypeException::class);
-        $this->response['yyy'];
-    }
-
-    public function testExistsArrayAccess()
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(true);
-
-        $this->psr7Response->method('getHeaderLine')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn('application/json');
-
-        $this->stream->method('getContents')
-            ->willReturn('{"foo":"bar"}');
-
-        $this->assertFalse(isset($this->response['baz']));
-        $this->assertTrue(isset($this->response['foo']));
-    }
-
-    public function testSetArrayAccessThrowsException()
-    {
-        $this->expectException(InvalidArrayException::class);
-        $this->response['foo'] = 'bar';
-    }
-
-    public function testUnsetArrayAccessThrowsException()
-    {
-        $this->expectException(InvalidArrayException::class);
-        unset($this->response['foo']);
-    }
-
-    public function testObjectAccess()
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(true);
-
-        $this->psr7Response->method('getHeaderLine')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn('application/json');
-
-        $this->stream->method('getContents')
-            ->willReturn('{ "foo" : "bar" }');
-
-        $this->assertEquals($this->response->foo, 'bar');
-    }
-
-    public function testObjectAccessThrowUndefinedPropertyException()
-    {
-        $this->psr7Response->method('hasHeader')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn(true);
-
-        $this->psr7Response->method('getHeaderLine')
-            ->with($this->equalTo('Content-Type'))
-            ->willReturn('application/json');
-
-        $this->stream->method('getContents')
-            ->willReturn('{ "foo" : "bar" }');
-
-        $this->expectException(UndefinedPropertyException::class);
-        $value = $this->response->bar;
     }
 }

@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Elastic\Transport;
 
-use ArrayAccess;
 use Elastic\Transport\Exception\UndefinedPropertyException;
 use Elastic\Transport\Exception\UnknownContentTypeException;
 use Elastic\Transport\Serializer\CsvSerializer;
@@ -23,20 +22,13 @@ use Elastic\Transport\Serializer\JsonObjectSerializer;
 use Elastic\Transport\Serializer\NDJsonArraySerializer;
 use Elastic\Transport\Serializer\NDJsonObjectSerializer;
 use Elastic\Transport\Serializer\XmlSerializer;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
-use SimpleXMLElement;
+use Psr\Http\Message\ResponseInterface as MessageResponseInterface;
 
 /**
- * Wraps a PSR-7 ResponseInterface offering helper to deserialize the body.
- * Implements the ArrayAccess to facilitate the access of the body content
- * using an associative array. It uses __get() to access the body content as
- * object properties.
+ * Wraps a PSR-7 ResponseInterface offering helper to deserialize the body
  */
-class Response implements ArrayAccess
+class Response implements ResponseInterface
 {
-    use ResponseArrayAccessTrait;
-
     /**
      * @var array
      */
@@ -48,16 +40,11 @@ class Response implements ArrayAccess
     protected $asObject;
 
     /**
-     * @var SimpleXMLElement
-     */
-    protected $asXml;
-
-    /**
      * @var string
      */
     protected $asString;
 
-    public function __construct(ResponseInterface $response)
+    public function __construct(MessageResponseInterface $response)
     {
         $this->response = $response;
     }
@@ -120,34 +107,12 @@ class Response implements ArrayAccess
             $this->asObject = NDJsonObjectSerializer::deserialize($this->asString());
             return $this->asObject;
         }
+        if (strpos($contentType, 'text/xml') !== false || strpos($contentType, 'application/xml') !== false) {
+            $this->asObject = XmlSerializer::deserialize($this->asString());
+            return $this->asObject;
+        }
         throw new UnknownContentTypeException(sprintf(
             "Cannot deserialize the reponse as object with Content-Type: %s",
-            $contentType
-        ));
-    }
-
-    /**
-     * Converts the response body to SimpleXMLElement, if possible.
-     * Otherwise, it throws an UnknownContentTypeException
-     * if Content-Type is not specified or unknown.
-     * 
-     * @throws UnknownContentTypeException
-     */
-    public function asXml(): SimpleXMLElement
-    {
-        if (isset($this->asXml)) {
-            return $this->asXml;
-        }
-        if (!$this->response->hasHeader('Content-Type')) {
-            throw new UnknownContentTypeException('No Content-Type specified in the response');
-        }
-        $contentType = $this->response->getHeaderLine('Content-Type');
-        if (strpos($contentType, 'text/xml') !== false || strpos($contentType, 'application/xml') !== false) {
-            $this->asXml = XmlSerializer::deserialize($this->asString());
-            return $this->asXml;
-        }
-        throw new UnknownContentTypeException(sprintf(
-            "Cannot deserialize the reponse as XML with Content-Type: %s",
             $contentType
         ));
     }
@@ -177,23 +142,8 @@ class Response implements ArrayAccess
      * 
      * @see https://www.php-fig.org/psr/psr-7/#33-psrhttpmessageresponseinterface
      */
-    public function getResponse(): ResponseInterface
+    public function getResponse(): MessageResponseInterface
     {
         return $this->response;
-    }
-
-    /**
-     * PHP magic method for accessing the response property
-     */
-    public function __get(string $name)
-    {
-        $obj = $this->asObject();
-        if (isset($obj->$name)) {
-            return $obj->$name;
-        }
-        throw new UndefinedPropertyException(sprintf(
-            "The property %s does not exist in the response",
-            $name
-        ));
     }
 }
