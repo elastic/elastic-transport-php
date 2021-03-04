@@ -28,7 +28,7 @@ class NDJsonObjectSerializer extends NDJsonArraySerializer
     /**
      * @return ArrayIterator
      */
-    public static function deserialize(string $data)
+    public static function deserialize(string $data): ArrayIterator
     {
         $array = explode(strpos($data, "\r\n") !== false ? "\r\n" : "\n", $data);
         $result = new ArrayIterator();

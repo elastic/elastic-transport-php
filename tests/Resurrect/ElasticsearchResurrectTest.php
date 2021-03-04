@@ -17,6 +17,7 @@ namespace Elastic\Transport\Test\Resurrect;
 use Elastic\Transport\ConnectionPool\Connection;
 use Elastic\Transport\ConnectionPool\Resurrect\ElasticsearchResurrect;
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -28,6 +29,26 @@ use Psr\Http\Client\ClientExceptionInterface;
 
 final class ElasticsearchResurrectTest extends TestCase
 {
+    /**
+     * @var MockHandler
+     */
+    private $mock;
+
+    /**
+     * @var HandlerStack
+     */
+    private $handlerStack;
+
+    /**
+     * @var Client
+     */
+    private $client;
+
+    /**
+     * @var Connection
+     */
+    private $connection;
+
     public function setUp(): void
     {
         $this->mock = new MockHandler();

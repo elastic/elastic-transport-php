@@ -32,7 +32,7 @@ class CsvSerializer implements SerializerInterface
     /**
      * @return array
      */
-    public static function deserialize(string $data)
+    public static function unserialize(string $data): array
     {
         $result = [];
         foreach (explode("\n", $data) as $row) {

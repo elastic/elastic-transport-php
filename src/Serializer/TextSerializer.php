@@ -24,7 +24,7 @@ class TextSerializer implements SerializerInterface
     /**
      * @return string
      */
-    public static function deserialize(string $data)
+    public static function unserialize(string $data): string
     {
         return $data;
     }

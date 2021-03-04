@@ -42,5 +42,8 @@ jobs:
       if: steps.composer-cache.outputs.cache-hit != 'true'
       run: composer install --prefer-dist --no-progress --no-suggest
 
+    . name: Run PHP Stan
+      run: composer run-script phpstan
+      
     - name: Run unit test
       run: composer run-script test

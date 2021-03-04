@@ -30,6 +30,10 @@ class TransportBuilder
     protected $logger;
     protected $hosts = [];
 
+    final public function __construct()
+    {
+    }
+
     public static function create(): TransportBuilder
     {
         return new static();

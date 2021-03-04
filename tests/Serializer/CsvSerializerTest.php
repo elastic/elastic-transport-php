@@ -19,14 +19,14 @@ use PHPUnit\Framework\TestCase;
 
 final class CsvSerializerTest extends TestCase
 {
-    public function testDeserialize()
+    public function testUnserialize()
     {
         $csv = <<<'EOT'
 1,2,3
 4,5,6
 EOT;
 
-        $result = CsvSerializer::deserialize($csv);
+        $result = CsvSerializer::unserialize($csv);
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
         $this->assertEquals([1,2,3], $result[0]);

@@ -22,6 +22,11 @@ use SimpleXMLElement;
 
 final class XmlSerializerTest extends TestCase
 {
+    /**
+     * @var string
+     */
+    private $xml;
+
     public function setUp(): void
     {   
         $this->xml = <<<'EOT'
@@ -34,9 +39,9 @@ final class XmlSerializerTest extends TestCase
 EOT;
     }
 
-    public function testDeserialize()
+    public function testUnserialize()
     {
-        $result = XmlSerializer::deserialize($this->xml);
+        $result = XmlSerializer::unserialize($this->xml);
         $this->assertInstanceOf(SimpleXMLElement::class, $result);
         $this->assertEquals('login', $result->cmd);
         $this->assertEquals('Richard', $result->login);

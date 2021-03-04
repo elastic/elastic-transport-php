@@ -48,7 +48,7 @@ class NDJsonArraySerializer implements SerializerInterface
     /**
      * @return array
      */
-    public static function deserialize(string $data)
+    public static function unserialize(string $data): array
     {
         $array = explode(strpos($data, "\r\n") !== false ? "\r\n" : "\n", $data);
         $result = [];

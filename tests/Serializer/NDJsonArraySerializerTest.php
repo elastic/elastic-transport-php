@@ -19,6 +19,11 @@ use PHPUnit\Framework\TestCase;
 
 final class NDJsonArraySerializerTest extends TestCase
 {
+    /**
+     * @var string
+     */
+    private $ndjson;
+
     public function setUp(): void
     {
         $this->ndjson = <<<'EOT'
@@ -29,9 +34,9 @@ final class NDJsonArraySerializerTest extends TestCase
 EOT;
     }
 
-    public function testDeserialize()
+    public function testUnserialize()
     {
-        $result = NDJsonArraySerializer::deserialize($this->ndjson);
+        $result = NDJsonArraySerializer::unserialize($this->ndjson);
         $this->assertIsArray($result);
         $this->assertEquals('test', $result[0]['index']['_index']);
         $this->assertEquals('value1', $result[1]['field1']);

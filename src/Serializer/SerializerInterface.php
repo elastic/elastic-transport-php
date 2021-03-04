@@ -18,5 +18,5 @@ interface SerializerInterface
 {
     public static function serialize($data): string;
 
-    public static function deserialize(string $data);
+    public static function unserialize(string $data);
 }

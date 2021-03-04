@@ -21,6 +21,11 @@ use stdClass;
 
 final class NDJsonObjectSerializerTest extends TestCase
 {
+    /**
+     * @var string
+     */
+    private $json;
+
     public function setUp(): void
     {
         $this->json = <<<'EOT'
@@ -31,9 +36,9 @@ final class NDJsonObjectSerializerTest extends TestCase
 EOT;
     }
 
-    public function testDeserialize()
+    public function testUnserialize()
     {
-        $result = NDJsonObjectSerializer::deserialize($this->json);
+        $result = NDJsonObjectSerializer::unserialize($this->json);
         $this->assertInstanceOf(ArrayAccess::class, $result);
         foreach ($result as $res) {
             $this->assertInstanceOf(stdClass::class, $res);

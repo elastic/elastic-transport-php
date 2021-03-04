@@ -41,7 +41,7 @@ class JsonArraySerializer implements SerializerInterface
     /**
      * @return array
      */
-    public static function deserialize(string $data)
+    public static function unserialize(string $data): array
     {
         try {
             return json_decode($data, true, 512, JSON_THROW_ON_ERROR);

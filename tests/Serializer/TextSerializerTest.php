@@ -19,14 +19,19 @@ use PHPUnit\Framework\TestCase;
 
 final class TextSerializerTest extends TestCase
 {
+    /**
+     * @var string
+     */
+    private $data;
+
     public function setUp(): void
     {
         $this->data = 'Hello World!';
     }
 
-    public function testDeserialize()
+    public function testUnserialize()
     {
-        $result = TextSerializer::deserialize($this->data);
+        $result = TextSerializer::unserialize($this->data);
         $this->assertEquals($this->data, $result);
     }
 

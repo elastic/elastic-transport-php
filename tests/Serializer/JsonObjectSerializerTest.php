@@ -20,7 +20,7 @@ use stdClass;
 
 final class JsonObjectSerializerTest extends TestCase
 {
-    public function testDeserialize()
+    public function testUnserialize()
     {
         $json = <<<'EOT'
 {
@@ -30,7 +30,7 @@ final class JsonObjectSerializerTest extends TestCase
 }
 EOT;
 
-        $result = JsonObjectSerializer::deserialize($json);
+        $result = JsonObjectSerializer::unserialize($json);
         $this->assertInstanceOf(stdClass::class, $result);
         $this->assertEquals('Apple', $result->fruit);
         $this->assertEquals('Large', $result->size);

@@ -23,6 +23,16 @@ use PHPUnit\Framework\TestCase;
 
 final class SimpleConnectionPoolTest extends TestCase
 {
+    /**
+     * @var SelectorInterface
+     */
+    private $selector;
+
+    /**
+     * @var ResurrectInterface
+     */
+    private $resurrect;
+
     public function setUp(): void
     {
         $this->selector = $this->createStub(SelectorInterface::class);

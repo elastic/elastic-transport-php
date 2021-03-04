@@ -22,6 +22,11 @@ use GuzzleHttp\Psr7\Request;
 
 class ElasticsearchResurrect implements ResurrectInterface
 {
+    /**
+     * @var ClientInterface
+     */
+    protected $client;
+
     public function __construct(ClientInterface $client = null)
     {
         $this->client = $client ?? new GuzzleClient;

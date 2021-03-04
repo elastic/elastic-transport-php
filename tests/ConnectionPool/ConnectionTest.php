@@ -20,6 +20,11 @@ use Psr\Http\Message\UriInterface;
 
 final class ConnectionTest extends TestCase
 {
+    /**
+     * @var Connection
+     */
+    private $connection;
+
     public function setUp(): void
     {
         $this->connection = new Connection('localhost');

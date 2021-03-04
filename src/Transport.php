@@ -27,12 +27,45 @@ use function sprintf;
 
 final class Transport implements ClientInterface
 {
+    /**
+     * @var ClientInterface
+     */
     private $client;
+
+    /**
+     * @var LoggerInterface
+     */
     private $logger;
+
+    /**
+     * @var ConnectionPoolInterface
+     */
     private $connectionPool;
+
+    /**
+     * @var array
+     */
     private $headers = [];
+
+    /**
+     * @var string
+     */
     private $user;
+
+    /**
+     * @var string
+     */
     private $password;
+
+    /**
+     * @var RequestInterface
+     */
+    private $lastRequest;
+
+    /**
+     * @var ResponseInterface
+     */
+    private $lastResponse;
 
     public function __construct(
         ClientInterface $client,

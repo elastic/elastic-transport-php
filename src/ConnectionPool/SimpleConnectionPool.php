@@ -23,8 +23,20 @@ use GuzzleHttp\Psr7\Uri;
 
 class SimpleConnectionPool implements ConnectionPoolInterface
 {
+    /**
+     * @var array
+     */
     protected $connections = [];
+    
+    /**
+     * @var SelectorInterface
+     */
     protected $selector;
+
+    /**
+     * @var ResurrectInterface
+     */
+    protected $resurrect;
 
     public function __construct(SelectorInterface $selector = null, ResurrectInterface $resurrect = null)
     {   

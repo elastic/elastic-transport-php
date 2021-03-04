@@ -40,7 +40,7 @@ class XmlSerializer implements SerializerInterface
     /**
      * @return SimpleXMLElement
      */
-    public static function deserialize(string $data)
+    public static function unserialize(string $data): SimpleXMLElement
     {
         $result = simplexml_load_string($data);
         if (false === $result) {

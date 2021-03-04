@@ -20,6 +20,11 @@ use PHPUnit\Framework\TestCase;
 
 final class NoResurrectTest extends TestCase
 {
+    /**
+     * @var Connection
+     */
+    private $connection;
+
     public function setUp(): void
     {
         $this->connection = $this->createStub(Connection::class);

@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 
 final class JsonArraySerializerTest extends TestCase
 {
-    public function testDeserialize()
+    public function testUnserialize()
     {
         $json = <<<'EOT'
 {
@@ -29,7 +29,7 @@ final class JsonArraySerializerTest extends TestCase
 }
 EOT;
 
-        $result = JsonArraySerializer::deserialize($json);
+        $result = JsonArraySerializer::unserialize($json);
         $this->assertIsArray($result);
         $this->assertEquals('Apple', $result['fruit']);
         $this->assertEquals('Large', $result['size']);

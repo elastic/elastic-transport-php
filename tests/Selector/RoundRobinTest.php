@@ -21,6 +21,16 @@ use PHPUnit\Framework\TestCase;
 
 final class RoundRobinTest extends TestCase
 {
+    /**
+     * @var RoundRobin
+     */
+    private $selector;
+
+    /**
+     * @var Connection
+     */
+    private $connection;
+
     public function setUp(): void
     {
         $this->selector = new RoundRobin();
