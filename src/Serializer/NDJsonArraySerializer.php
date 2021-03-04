@@ -19,31 +19,12 @@ use JsonException;
 
 use function explode;
 use function json_decode;
-use function json_encode;
 use function sprintf;
 use function strpos;
 
 class NDJsonArraySerializer implements SerializerInterface
 {
-    public static function serialize($rows): string
-    {
-        $result = '';
-        foreach ($rows as $row) {
-            if (empty($row)) {
-                $result .= "{}\n";
-                continue;
-            }
-            try {
-                $result .= json_encode($row, JSON_PRESERVE_ZERO_FRACTION + JSON_INVALID_UTF8_SUBSTITUTE + JSON_THROW_ON_ERROR) . "\n";
-            } catch (JsonException $e) {
-                throw new InvalidJsonException(sprintf(
-                    "I cannot serialize to NDJson: %s", 
-                    $e->getMessage()
-                ));
-            }
-        }
-        return $result;
-    }
+    use NDJsonSerializerTrait;
 
     /**
      * @return array

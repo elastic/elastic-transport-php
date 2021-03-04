@@ -17,23 +17,21 @@ namespace Elastic\Transport\Serializer;
 use Elastic\Transport\Exception\InvalidJsonException;
 use JsonException;
 
-use function json_decode;
+use function json_encode;
 use function sprintf;
 
-class JsonObjectSerializer implements SerializerInterface
+trait JsonSerializerTrait
 {
-    use JsonSerializerTrait;
-    
-    /**
-     * @return object
-     */
-    public static function unserialize(string $data): object
+    public static function serialize($data): string
     {
+        if (empty($data)) {
+            return '{}';
+        }
         try {
-            return json_decode($data, false, 512, JSON_THROW_ON_ERROR);
+            return json_encode($data, JSON_PRESERVE_ZERO_FRACTION + JSON_INVALID_UTF8_SUBSTITUTE + JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             throw new InvalidJsonException(sprintf(
-                "Not a valid Json: %s", 
+                "I cannot serialize to Json: %s", 
                 $e->getMessage()
             ));
         }

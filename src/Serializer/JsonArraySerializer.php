@@ -18,25 +18,11 @@ use Elastic\Transport\Exception\InvalidJsonException;
 use JsonException;
 
 use function json_decode;
-use function json_encode;
 use function sprintf;
 
 class JsonArraySerializer implements SerializerInterface
 {
-    public static function serialize($data): string
-    {
-        if (empty($data)) {
-            return '{}';
-        }
-        try {
-            return json_encode($data, JSON_PRESERVE_ZERO_FRACTION + JSON_INVALID_UTF8_SUBSTITUTE + JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            throw new InvalidJsonException(sprintf(
-                "I cannot serialize to Json: %s", 
-                $e->getMessage()
-            ));
-        }
-    }
+    use JsonSerializerTrait;
 
     /**
      * @return array
