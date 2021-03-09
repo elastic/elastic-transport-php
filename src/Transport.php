@@ -140,14 +140,12 @@ final class Transport implements ClientInterface
     public function setElasticMetaHeader(string $clientName, string $clientVersion): self
     {
         $phpSemVersion = sprintf("%d.%d.%d", PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION);
-        // Remove pre-release suffix with a single 'p' letter
-        $clientVersion = str_replace(['alpha', 'beta', 'snapshot', 'rc', 'pre'], 'p', strtolower($clientVersion)); 
         $meta = sprintf(
             "%s=%s,php=%s,t=%s,a=%d",
             $clientName,
-            $clientVersion,
+            $this->purgePreReleaseTag($clientVersion),
             $phpSemVersion,
-            self::VERSION,
+            $this->purgePreReleaseTag(self::VERSION),
             0 // syncronous
         );
         $lib = $this->getClientLibraryInfo();
@@ -156,6 +154,14 @@ final class Transport implements ClientInterface
         }
         $this->headers['x-elastic-client-meta'] = $meta;
         return $this;
+    }
+
+    /**
+     * Remove pre-release suffix with a single 'p' letter
+     */
+    private function purgePreReleaseTag(string $version): string
+    {
+        return str_replace(['alpha', 'beta', 'snapshot', 'rc', 'pre'], 'p', strtolower($version)); 
     }
 
     public function getLastRequest(): RequestInterface
