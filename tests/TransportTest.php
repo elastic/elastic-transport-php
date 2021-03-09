@@ -284,4 +284,30 @@ final class TransportTest extends TestCase
         $userAgent = $this->transport->getLastRequest()->getHeader('User-Agent')[0] ?? '';
         $this->assertMatchesRegularExpression('/^test\/1\.0 \(.+\)$/', $userAgent);
     }
+
+    public function testSetElasticMetaHeader()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $request = new Request('GET', 'http://domain/path');
+        $this->transport->setElasticMetaHeader('es', '7.11.0');
+        $this->transport->sendRequest($request);
+
+        $meta = $this->transport->getLastRequest()->getHeader('x-elastic-client-meta')[0] ?? null;
+        $this->assertMatchesRegularExpression('/^[a-z]{1,}=[a-z0-9\.\-]{1,}(?:,[a-z]{1,}=[a-z0-9\.\-]+)*$/', $meta);
+    }
+
+    public function testSetElasticMetaHeaderWithSnapshotVersion()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $request = new Request('GET', 'http://domain/path');
+        $this->transport->setElasticMetaHeader('es', '7.11.0-snapshot');
+        $this->transport->sendRequest($request);
+
+        $meta = $this->transport->getLastRequest()->getHeader('x-elastic-client-meta')[0] ?? null;
+        $this->assertStringContainsString('es=7.11.0-p', $meta);
+    }
 }

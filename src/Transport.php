@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport;
 
+use Composer\InstalledVersions;
 use Elastic\Transport\ConnectionPool\ConnectionPoolInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -27,6 +28,8 @@ use function sprintf;
 
 final class Transport implements ClientInterface
 {
+    const VERSION = "7.12beta1";
+
     /**
      * @var ClientInterface
      */
@@ -115,7 +118,7 @@ final class Transport implements ClientInterface
         return $this;
     }
 
-    public function setUserAgent(string $name, string $version)
+    public function setUserAgent(string $name, string $version): self
     {
         $this->headers['User-Agent'] = sprintf(
             "%s/%s (%s %s; PHP %s)",
@@ -125,6 +128,34 @@ final class Transport implements ClientInterface
             $this->getOSVersion(),
             phpversion()
         );
+        return $this;
+    }
+
+    /**
+     * Set the x-elastic-client-meta header
+     * 
+     * The header format is specified by the following regex:
+     * ^[a-z]{1,}=[a-z0-9\.\-]{1,}(?:,[a-z]{1,}=[a-z0-9\.\-]+)*$
+     */
+    public function setElasticMetaHeader(string $clientName, string $clientVersion): self
+    {
+        $phpSemVersion = sprintf("%d.%d.%d", PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION);
+        // Remove pre-release suffix with a single 'p' letter
+        $clientVersion = str_replace(['alpha', 'beta', 'snapshot', 'rc', 'pre'], 'p', strtolower($clientVersion)); 
+        $meta = sprintf(
+            "%s=%s,php=%s,t=%s,a=%d",
+            $clientName,
+            $clientVersion,
+            $phpSemVersion,
+            self::VERSION,
+            0 // syncronous
+        );
+        $lib = $this->getClientLibraryInfo();
+        if (!empty($lib)) {
+            $meta .= sprintf(",%s=%s", $lib[0], $lib[1]);
+        }
+        $this->headers['x-elastic-client-meta'] = $meta;
+        return $this;
     }
 
     public function getLastRequest(): RequestInterface
@@ -208,5 +239,19 @@ final class Transport implements ClientInterface
                 : php_uname("r");
         }
         return $this->OSVersion;
+    }
+
+    /**
+     * Returns the name and the version of the Client HTTP library used
+     * Here a list of supported libraries:
+     * gu => guzzlehttp/guzzle
+     */
+    private function getClientLibraryInfo(): array
+    {
+        if ($this->client instanceof \GuzzleHttp\Client) {
+            $version = InstalledVersions::getPrettyVersion('guzzlehttp/guzzle');
+            return ['gu', $version];
+        }
+        return [];
     }
 }
