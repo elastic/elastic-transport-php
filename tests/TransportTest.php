@@ -271,4 +271,17 @@ final class TransportTest extends TestCase
         $this->assertTrue($this->transport->getLastRequest()->hasHeader('X-Foo'));
         $this->assertEquals($headers['X-Foo'], $this->transport->getLastRequest()->getHeader('X-Foo')[0]);
     }
+
+    public function testSetUserAgent()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $request = new Request('GET', 'http://domain/path');
+        $this->transport->setUserAgent('test', '1.0');
+        $this->transport->sendRequest($request);
+
+        $userAgent = $this->transport->getLastRequest()->getHeader('User-Agent')[0] ?? '';
+        $this->assertMatchesRegularExpression('/^test\/1\.0 \(.+\)$/', $userAgent);
+    }
 }

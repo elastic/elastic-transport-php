@@ -67,6 +67,11 @@ final class Transport implements ClientInterface
      */
     private $lastResponse;
 
+    /**
+     * @var string
+     */
+    private $OSVersion;
+
     public function __construct(
         ClientInterface $client,
         ConnectionPoolInterface $connectionPool,
@@ -108,6 +113,18 @@ final class Transport implements ClientInterface
         $this->user = $user;
         $this->password = $password;
         return $this;
+    }
+
+    public function setUserAgent(string $name, string $version)
+    {
+        $this->headers['User-Agent'] = sprintf(
+            "%s/%s (%s %s; PHP %s)",
+            $name,
+            $version,
+            PHP_OS,
+            $this->getOSVersion(),
+            phpversion()
+        );
     }
 
     public function getLastRequest(): RequestInterface
@@ -177,5 +194,19 @@ final class Transport implements ClientInterface
             $this->logger->error($e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Get the OS version using php_uname if available
+     * otherwise it returns an empty string
+     */
+    private function getOSVersion(): string
+    {
+        if ($this->OSVersion === null) {
+            $this->OSVersion = strpos(strtolower(ini_get('disable_functions')), 'php_uname') !== false
+                ? ''
+                : php_uname("r");
+        }
+        return $this->OSVersion;
     }
 }
