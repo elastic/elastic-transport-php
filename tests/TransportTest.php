@@ -128,17 +128,62 @@ final class TransportTest extends TestCase
         $this->assertEquals('localhost', $lastRequest->getUri()->getHost());
     }
 
+    public function testSendRequestWithQueryAndEmptyHost()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $this->connection->method('getUri')
+            ->willReturn(new Uri('http://localhost'));
+
+        $request = new Request('GET', '/');
+        $request = $request->withUri($request->getUri()->withQuery('name=test'));
+        $response = $this->transport->sendRequest($request);
+
+        $lastRequest = $this->transport->getLastRequest();
+        $this->assertEquals('name=test', $lastRequest->getUri()->getQuery());
+    }
+
+    public function testSendRequestWithQueryAndHost()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $request = new Request('GET', 'http://localhost');
+        $request = $request->withUri($request->getUri()->withQuery('name=test'));
+        $response = $this->transport->sendRequest($request);
+
+        $lastRequest = $this->transport->getLastRequest();
+        $this->assertEquals('name=test', $lastRequest->getUri()->getQuery());
+    }
+
     public function testSendRequestWithHost()
     {
         $expectedResponse = new Response(200);
         $this->mock->append($expectedResponse);
 
-        $request = new Request('GET', 'http://domain/path');
+        $request = new Request('GET', 'https://domain/path');
+        $response = $this->transport->sendRequest($request);
+
+        $lastRequest = $this->transport->getLastRequest();
+        $this->assertEquals('https', $lastRequest->getUri()->getScheme());
+        $this->assertEquals('domain', $lastRequest->getUri()->getHost());
+        $this->assertEquals('/path', $lastRequest->getUri()->getPath());
+    }
+
+    public function testSendRequestWithHostAndPort()
+    {
+        $expectedResponse = new Response(200);
+        $this->mock->append($expectedResponse);
+
+        $uri = new Uri('http://domain/path');
+        $request = new Request('GET', $uri->withPort(9200));
         $response = $this->transport->sendRequest($request);
 
         $lastRequest = $this->transport->getLastRequest();
         $this->assertEquals('domain', $lastRequest->getUri()->getHost());
         $this->assertEquals('/path', $lastRequest->getUri()->getPath());
+        $this->assertEquals(9200, $lastRequest->getUri()->getPort());
     }
 
     public function testLoggerWithSendRequest()

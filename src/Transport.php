@@ -178,9 +178,17 @@ final class Transport implements ClientInterface
     {      
         // Set the host if empty
         if (empty($request->getUri()->getHost())) {
-            $path = $request->getUri()->getPath();
             $connection = $this->connectionPool->nextConnection();
-            $request = $request->withUri($connection->getUri()->withPath($path));
+            $host = $connection->getUri()->getHost();
+            $port = $connection->getUri()->getPort();
+            $scheme = $connection->getUri()->getScheme();
+
+            $request = $request->withUri(
+                $request->getUri()
+                    ->withHost($host)
+                    ->withPort($port)
+                    ->withScheme($scheme)
+            );
         }
         
         // Set the global headers, if not already set
