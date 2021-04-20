@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Test\Serializer;
 
-use Elastic\Transport\Serializer\JsonObjectSerializer;
+use Elastic\Transport\Serializer\JsonSerializer;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -30,7 +30,7 @@ final class JsonObjectSerializerTest extends TestCase
 }
 EOT;
 
-        $result = JsonObjectSerializer::unserialize($json);
+        $result = JsonSerializer::unserialize($json, ['type' => 'object']);
         $this->assertInstanceOf(stdClass::class, $result);
         $this->assertEquals('Apple', $result->fruit);
         $this->assertEquals('Large', $result->size);
@@ -46,7 +46,45 @@ EOT;
         $data->size = 'Large';
         $data->color = 'Red';
 
-        $result = JsonObjectSerializer::serialize($data);
+        $result = JsonSerializer::serialize($data, ['type' => 'object']);
+        $this->assertEquals($json, $result);
+    }
+
+    public function testSerializeWithNullValues()
+    {
+        $json = '{"fruit":"Apple","size":"Large"}';
+
+        $data = new stdClass();
+        $data->fruit = 'Apple';
+        $data->size = 'Large';
+        $data->color = null;
+
+        $result = JsonSerializer::serialize($data, ['type' => 'object']);
+        $this->assertEquals($json, $result);
+    }
+
+    public function testSerializeWithRecursiveNullValues()
+    {
+        $json = '{"fruit":"Apple","size":"Large","color":{"red":10,"blue":20,"opacity":{"foo":40,"baz":30}}}';
+
+        $data = new stdClass();
+        $data->fruit = 'Apple';
+        $data->size = 'Large';
+
+        $color = new stdClass();
+        $color->red = 10;
+        $color->blue = 20;
+        $color->green = null;
+
+        $opacity = new stdClass();
+        $opacity->foo = 40;
+        $opacity->bar = null;
+        $opacity->baz = 30;
+
+        $color->opacity = $opacity;
+        $data->color = $color;
+
+        $result = JsonSerializer::serialize($data, ['type' => 'object']);
         $this->assertEquals($json, $result);
     }
 }

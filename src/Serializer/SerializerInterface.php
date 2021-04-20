@@ -16,7 +16,17 @@ namespace Elastic\Transport\Serializer;
 
 interface SerializerInterface
 {
-    public static function serialize($data): string;
+    /**
+     * @param mixed $data
+     * @param array $options
+     * @return string
+     */
+    public static function serialize($data, array $options = []): string;
 
-    public static function unserialize(string $data);
+    /**
+     * @param string $data
+     * @param array $options
+     * @return mixed
+     */
+    public static function unserialize(string $data, array $options = []);
 }

@@ -20,11 +20,16 @@ use function substr;
 
 class CsvSerializer implements SerializerInterface
 {
-    public static function serialize($data): string
+    public static function serialize($data, array $options = []): string
     {
         $result = '';
         foreach ($data as $row) {
-            $result .= implode(',', $row) . "\n";
+            if (is_array($row) || is_object($row)) {
+                $result .= implode(',', (array) $row);
+            } else {
+                $result .= (string) $row;
+            }
+            $result .= "\n";
         }
         return empty($result) ? $result : substr($result, 0, -1);
     }
@@ -32,7 +37,7 @@ class CsvSerializer implements SerializerInterface
     /**
      * @return array
      */
-    public static function unserialize(string $data): array
+    public static function unserialize(string $data, array $options = []): array
     {
         $result = [];
         foreach (explode("\n", $data) as $row) {

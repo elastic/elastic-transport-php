@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Serializer;
 
-use ArrayIterator;
+use ArrayObject;
 use Elastic\Transport\Exception\InvalidJsonException;
 use JsonException;
 
@@ -23,23 +23,45 @@ use function json_decode;
 use function sprintf;
 use function strpos;
 
-class NDJsonObjectSerializer implements SerializerInterface
+class NDJsonSerializer implements SerializerInterface
 {
-    use NDJsonSerializerTrait;
+    /**
+     * The available $options are: 
+     * 'remove_null'  => (bool) enable/disable the removing of
+     *                   null values (default is true)
+     * 
+     * @param array $data
+     */
+    public static function serialize($data, array $options = []): string
+    {
+        $result = '';
+        foreach ($data as $row) {
+            if (empty($row)) {
+                $result .= "{}\n";
+                continue;
+            }
+            $result .= JsonSerializer::serialize($row, $options) . "\n";
+        }
+        return $result;
+    }
 
     /**
-     * @return ArrayIterator
+     * The available options are:
+     * 'type' => (string) specify if the array result should contain object
+     *           or array (default is array)
+     * 
+     * @return array|ArrayObject
      */
-    public static function unserialize(string $data): ArrayIterator
+    public static function unserialize(string $data, array $options = [])
     {
         $array = explode(strpos($data, "\r\n") !== false ? "\r\n" : "\n", $data);
-        $result = new ArrayIterator();
+        $result = [];
         foreach ($array as $json) {
             if (empty($json)) {
                 continue;
             }
             try {
-                $result[] = json_decode($json, false, 512, JSON_THROW_ON_ERROR);
+                $result[] = JsonSerializer::unserialize($json, $options);
             } catch (JsonException $e) {
                 throw new InvalidJsonException(sprintf(
                     "Not a valid NDJson: %s", 
@@ -47,6 +69,7 @@ class NDJsonObjectSerializer implements SerializerInterface
                 ));
             }    
         }
-        return $result;
+        $type = $options['type'] ?? 'array';
+        return $type === 'array' ? $result : new ArrayObject($result);
     }
 }

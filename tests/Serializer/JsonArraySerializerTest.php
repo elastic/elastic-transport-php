@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Test\Serializer;
 
-use Elastic\Transport\Serializer\JsonArraySerializer;
+use Elastic\Transport\Serializer\JsonSerializer;
 use PHPUnit\Framework\TestCase;
 
 final class JsonArraySerializerTest extends TestCase
@@ -29,7 +29,7 @@ final class JsonArraySerializerTest extends TestCase
 }
 EOT;
 
-        $result = JsonArraySerializer::unserialize($json);
+        $result = JsonSerializer::unserialize($json);
         $this->assertIsArray($result);
         $this->assertEquals('Apple', $result['fruit']);
         $this->assertEquals('Large', $result['size']);
@@ -41,10 +41,10 @@ EOT;
         $json = '{"fruit":"Apple","size":"Large","color":"Red"}';
         $data = [
             'fruit' => 'Apple',
-            'size' => 'Large',
+            'size'  => 'Large',
             'color' => 'Red'
         ];
-        $result = JsonArraySerializer::serialize($data);
+        $result = JsonSerializer::serialize($data);
         $this->assertEquals($json, $result);
     }
 
@@ -52,7 +52,37 @@ EOT;
     {
         $json = '{}';
         $data = [];
-        $result = JsonArraySerializer::serialize($data);
+        $result = JsonSerializer::serialize($data);
+        $this->assertEquals($json, $result);
+    }
+
+    public function testSerializeArrayWithEmptyValues()
+    {
+        $json = '{"fruit":"Apple","color":"Red"}';
+        $data = [
+            'fruit' => 'Apple',
+            'size'  => null,
+            'color' => 'Red'
+        ];
+        $result = JsonSerializer::serialize($data);
+        $this->assertEquals($json, $result);
+    }
+
+    public function testSerializeArrayWithArrayAndEmptyValues()
+    {
+        $json = '{"fruit":"Apple","size":{"format":{"label":"xl"}},"color":"Red"}';
+        $data = [
+            'fruit' => 'Apple',
+            'size'  => [
+                'format' => [
+                    'dimension' => null,
+                    'label' => 'xl'
+                ],
+                'value' => null
+            ],
+            'color' => 'Red'
+        ];
+        $result = JsonSerializer::serialize($data);
         $this->assertEquals($json, $result);
     }
 }

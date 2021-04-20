@@ -51,6 +51,11 @@ final class Transport implements ClientInterface
     private $headers = [];
 
     /**
+     * @var array
+     */
+    private $temporaryHeaders = [];
+
+    /**
      * @var string
      */
     private $user;
@@ -190,14 +195,13 @@ final class Transport implements ClientInterface
                     ->withScheme($scheme)
             );
         }
-        
-        // Set the global headers, if not already set
+        // Set the headers, if not already present
         foreach ($this->headers as $name => $value) {
             if (!$request->hasHeader($name)) {
                 $request = $request->withHeader($name, $value);
             }
         }
-        // Set user info, if not already set
+        // Set user info, if not already present
         $uri = $request->getUri();
         if (empty($uri->getUserInfo())) {
             if (isset($this->user)) {

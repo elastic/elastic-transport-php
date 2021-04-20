@@ -15,7 +15,8 @@ declare(strict_types=1);
 namespace Elastic\Transport\Test\Serializer;
 
 use ArrayAccess;
-use Elastic\Transport\Serializer\NDJsonObjectSerializer;
+use ArrayObject;
+use Elastic\Transport\Serializer\NDJsonSerializer;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -38,8 +39,8 @@ EOT;
 
     public function testUnserialize()
     {
-        $result = NDJsonObjectSerializer::unserialize($this->json);
-        $this->assertInstanceOf(ArrayAccess::class, $result);
+        $result = NDJsonSerializer::unserialize($this->json, ['type' => 'object']);
+        $this->assertInstanceOf(ArrayObject::class, $result);
         foreach ($result as $res) {
             $this->assertInstanceOf(stdClass::class, $res);
         }
@@ -67,7 +68,7 @@ EOT;
                 ]
             ]
         ];
-        $result = NDJsonObjectSerializer::serialize($data);
+        $result = NDJsonSerializer::serialize($data, ['type' => 'object']);
         $this->assertEquals($this->json, $result);
     }
 }
