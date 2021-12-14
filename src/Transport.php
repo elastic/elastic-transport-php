@@ -28,7 +28,7 @@ use function sprintf;
 
 final class Transport implements ClientInterface
 {
-    const VERSION = "7.15.0";
+    const VERSION = "7.16.0";
 
     /**
      * @var ClientInterface
