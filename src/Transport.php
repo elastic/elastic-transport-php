@@ -15,7 +15,12 @@ declare(strict_types=1);
 namespace Elastic\Transport;
 
 use Composer\InstalledVersions;
+use Elastic\Transport\ConnectionPool\Connection;
 use Elastic\Transport\ConnectionPool\ConnectionPoolInterface;
+use Elastic\Transport\Exception\InvalidArgumentException;
+use Exception;
+use Http\Client\HttpAsyncClient;
+use Http\Promise\Promise;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
@@ -28,64 +33,28 @@ use function sprintf;
 
 final class Transport implements ClientInterface
 {
-    const VERSION = "7.15.0";
+    const VERSION = "8.x";
 
-    /**
-     * @var ClientInterface
-     */
-    private $client;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var ConnectionPoolInterface
-     */
-    private $connectionPool;
-
-    /**
-     * @var array
-     */
-    private $headers = [];
-
-    /**
-     * @var array
-     */
-    private $temporaryHeaders = [];
-
-    /**
-     * @var string
-     */
-    private $user;
-
-    /**
-     * @var string
-     */
-    private $password;
-
-    /**
-     * @var RequestInterface
-     */
-    private $lastRequest;
-
-    /**
-     * @var ResponseInterface
-     */
-    private $lastResponse;
-
-    /**
-     * @var string
-     */
-    private $OSVersion;
+    private ClientInterface $client;
+    private LoggerInterface $logger;
+    private ConnectionPoolInterface $connectionPool;
+    private array $headers = [];
+    private string $user;
+    private string $password;
+    private RequestInterface $lastRequest;
+    private ResponseInterface $lastResponse;
+    private string $OSVersion;
+    private int $retries = 0;
+    private bool $isAsync = false; // syncronous HTTP call as default
 
     public function __construct(
         ClientInterface $client,
+        HttpAsyncClient $asyncClient,
         ConnectionPoolInterface $connectionPool,
         LoggerInterface $logger
     ) {
         $this->client = $client;
+        $this->asyncClient = $asyncClient;
         $this->connectionPool = $connectionPool;
         $this->logger = $logger;
     }
@@ -109,6 +78,20 @@ final class Transport implements ClientInterface
     {
         $this->headers[$name] = $value;
         return $this;
+    }
+
+    public function setRetries(int $num): self
+    {
+        if ($num < 0) {
+            throw new InvalidArgumentException('The retries number must be a positive integer');
+        }
+        $this->retries = $num;
+        return $this;
+    }
+
+    public function getRetries(): int
+    {
+        return $this->retries;
     }
 
     public function getHeaders(): array
@@ -179,70 +162,151 @@ final class Transport implements ClientInterface
         return $this->lastResponse;
     }
 
-    public function sendRequest(RequestInterface $request): ResponseInterface
-    {      
-        // Set the host if empty
-        if (empty($request->getUri()->getHost())) {
-            $connection = $this->connectionPool->nextConnection();
-            $host = $connection->getUri()->getHost();
-            $port = $connection->getUri()->getPort();
-            $scheme = $connection->getUri()->getScheme();
-
-            $request = $request->withUri(
-                $request->getUri()
-                    ->withHost($host)
-                    ->withPort($port)
-                    ->withScheme($scheme)
-            );
-        }
-        // Set the headers, if not already present
+    /**
+     * Setup the headers, if not already present 
+     */
+    private function setupHeaders(RequestInterface $request): RequestInterface
+    {
         foreach ($this->headers as $name => $value) {
             if (!$request->hasHeader($name)) {
                 $request = $request->withHeader($name, $value);
             }
         }
-        // Set user info, if not already present
+        return $request;
+    }
+
+    /**
+     * Setup the user info, if not already present
+     */
+    private function setupUserInfo(RequestInterface $request): RequestInterface
+    {
         $uri = $request->getUri();
         if (empty($uri->getUserInfo())) {
             if (isset($this->user)) {
                 $request = $request->withUri($uri->withUserInfo($this->user, $this->password));
             }
         }
+        return $request;
+    }
+
+    /**
+     * Setup the connection Uri 
+     */
+    private function setupConnectionUri(Connection $connection, RequestInterface $request): RequestInterface
+    {
+        $host = $connection->getUri()->getHost();
+        $port = $connection->getUri()->getPort();
+        $scheme = $connection->getUri()->getScheme();
+
+        return $request->withUri(
+            $request->getUri()
+                ->withHost($host)
+                ->withPort($port)
+                ->withScheme($scheme)
+        );
+    }
+
+    public function sendRequest(RequestInterface $request): ResponseInterface
+    {   
+        // Set the host if empty
+        if (empty($request->getUri()->getHost())) {
+            $connection = $this->connectionPool->nextConnection();
+            $request = $this->setupConnectionUri($connection, $request);
+        }
+
+        $request = $this->setupHeaders($request);
+        $request = $this->setupUserInfo($request);
         
         $this->lastRequest = $request;
         $this->logger->info(sprintf(
-            "Request: %s %s\nBody: %s", 
+            "Send Request: %s %s", 
             $request->getMethod(),
-            (string) $request->getUri(),
-            $request->getBody()->getContents()
+            (string) $request->getUri()
         ));
         $this->logger->debug(sprintf(
-            "Request Headers: %s", 
-            json_encode($request->getHeaders())
+            "Headers: %s\nBody: %s",
+            json_encode($request->getHeaders()),
+            $request->getBody()->getContents()
         ));
-        try {
-            $response = $this->client->sendRequest($request);
-            $this->lastResponse = $response;
 
-            $this->logger->info(sprintf(
-                "Response: %d\nBody: %s", 
-                $response->getStatusCode(),
-                $response->getBody()->getContents()
-            ));
-            $this->logger->debug(sprintf(
-                "Response Headers: %s", 
-                json_encode($response->getHeaders())
-            ));
+        $count = -1;
+        while ($count < $this->getRetries()) {
+            try {
+                $count++;
+                $response = $this->client->sendRequest($request);
+                $this->lastResponse = $response;
+                
+                $this->logger->info(sprintf(
+                    "Response (retry %d): %d",
+                    $count, 
+                    $response->getStatusCode()
+                ));
+                $this->logger->debug(sprintf(
+                    "Headers: %s\nBody: %s",
+                    json_encode($response->getHeaders()),
+                    $response->getBody()->getContents()
+                ));
 
-            return $response;
-        } catch (NetworkExceptionInterface $e) {
-            $this->logger->error($e->getMessage());
-            $connection->markAlive(false);
-            throw $e;
-        } catch (ClientExceptionInterface $e) {
-            $this->logger->error($e->getMessage());
-            throw $e;
+                return $response;
+            } catch (NetworkExceptionInterface $e) {
+                $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+                if ($count >= $this->getRetries()) {
+                    $connection->markAlive(false);
+                    throw $e;
+                }
+            } catch (ClientExceptionInterface $e) {
+                $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+                throw $e;
+            }
+        } 
+    }
+
+    public function sendAsyncRequest(RequestInterface $request): Promise
+    {
+        // Set the host if empty
+        if (empty($request->getUri()->getHost())) {
+            $connection = $this->connectionPool->nextConnection();
+            $request = $this->setupConnectionUri($connection, $request);
         }
+
+        $request = $this->setupHeaders($request);
+        $request = $this->setupUserInfo($request);
+        
+        $this->lastRequest = $request;
+        $this->logger->info(sprintf(
+            "Send Async Request: %s %s", 
+            $request->getMethod(),
+            (string) $request->getUri()
+        ));
+        $this->logger->debug(sprintf(
+            "Headers: %s\nBody: %s",
+            json_encode($request->getHeaders()),
+            $request->getBody()->getContents()
+        ));
+
+        $promise = $this->asyncClient->sendAsyncRequest($request);
+        $promise->then(
+            // onFulfilled
+            function (ResponseInterface $response) {
+                $this->lastResponse = $response;
+
+                $this->logger->info(sprintf(
+                    "Async Response: %d", 
+                    $response->getStatusCode()
+                ));
+                $this->logger->debug(sprintf(
+                    "Headers: %s\nBody: %s",
+                    json_encode($response->getHeaders()),
+                    $response->getBody()->getContents()
+                ));
+            },
+            // onRejected
+            function (Exception $e) use ($connection) {
+                $connection->markAlive(false);
+                $this->logger->error(sprintf("Async error: %s", $e->getMessage()));
+            }
+        );
+        return $promise;
     }
 
     /**
@@ -266,10 +330,12 @@ final class Transport implements ClientInterface
      */
     private function getClientLibraryInfo(): array
     {
-        if ($this->client instanceof \GuzzleHttp\Client) {
-            $version = InstalledVersions::getPrettyVersion('guzzlehttp/guzzle');
-            return ['gu', $version];
+        switch(get_class($this->client)) {
+            case 'GuzzleHttp\Client':
+                $version = InstalledVersions::getPrettyVersion('guzzlehttp/guzzle');
+                return ['gu', $version];
+            default:
+                return [];
         }
-        return [];
     }
 }
