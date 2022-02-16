@@ -10,7 +10,7 @@
         "PSR_17",
         "PSR-18"
     ],
-    "license": "Apache-2.0",
+    "license": "MIT",
     "require": {
         "php": "^7.4|^8.0",
         "psr/http-client": "^1.0",
@@ -38,7 +38,7 @@
     },
     "scripts": {
         "test": [
-          "vendor/bin/phpunit"
+            "vendor/bin/phpunit"
         ],
         "phpstan": [
             "vendor/bin/phpstan analyse"
