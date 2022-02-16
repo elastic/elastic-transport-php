@@ -12,11 +12,14 @@
  */
 declare(strict_types=1);
 
-namespace Elastic\Transport\Exception;
+namespace Elastic\Transport\NodePool;
 
-use RuntimeException;
-
-class UndefinedPropertyException extends RuntimeException implements TransportException
+interface NodePoolInterface
 {
+    public function nextNode(): Node;
 
+    /**
+     * @param string[] $hosts
+     */
+    public function setHosts(array $hosts): self;
 }

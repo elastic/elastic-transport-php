@@ -4,10 +4,10 @@
  *
  * @link      https://github.com/elastic/elastic-transport-php
  * @copyright Copyright (c) Elasticsearch B.V (https://www.elastic.co)
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @license   https://opensource.org/licenses/MIT MIT License
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * Elasticsearch B.V licenses this file to you under the MIT License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);
@@ -15,29 +15,40 @@ declare(strict_types=1);
 namespace Elastic\Transport;
 
 use Composer\InstalledVersions;
-use Elastic\Transport\ConnectionPool\Connection;
-use Elastic\Transport\ConnectionPool\ConnectionPoolInterface;
+use Elastic\Transport\NodePool\Node;
+use Elastic\Transport\NodePool\NodePoolInterface;
 use Elastic\Transport\Exception\InvalidArgumentException;
+use Elastic\Transport\Exception\NoAsyncClientException;
+use Elastic\Transport\Exception\NoNodeAvailableException;
 use Exception;
 use Http\Client\HttpAsyncClient;
+use Http\Discovery\HttpAsyncClientDiscovery;
 use Http\Promise\Promise;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
+use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
+use function get_class;
+use function ini_get;
 use function json_encode;
+use function php_uname;
+use function phpversion;
 use function sprintf;
+use function strpos;
+use function str_replace;
+use function strtolower;
 
-final class Transport implements ClientInterface
+final class Transport implements ClientInterface, HttpAsyncClient
 {
-    const VERSION = "8.x";
+    const VERSION = "8.0.0-RC1";
 
     private ClientInterface $client;
     private LoggerInterface $logger;
-    private ConnectionPoolInterface $connectionPool;
+    private NodePoolInterface $nodePool;
     private array $headers = [];
     private string $user;
     private string $password;
@@ -45,17 +56,15 @@ final class Transport implements ClientInterface
     private ResponseInterface $lastResponse;
     private string $OSVersion;
     private int $retries = 0;
-    private bool $isAsync = false; // syncronous HTTP call as default
+    private HttpAsyncClient $asyncClient;
 
     public function __construct(
         ClientInterface $client,
-        HttpAsyncClient $asyncClient,
-        ConnectionPoolInterface $connectionPool,
+        NodePoolInterface $nodePool,
         LoggerInterface $logger
     ) {
         $this->client = $client;
-        $this->asyncClient = $asyncClient;
-        $this->connectionPool = $connectionPool;
+        $this->nodePool = $nodePool;
         $this->logger = $logger;
     }
 
@@ -64,9 +73,9 @@ final class Transport implements ClientInterface
         return $this->client;
     }
 
-    public function getConnectionPool(): ConnectionPoolInterface
+    public function getNodePool(): NodePoolInterface
     {
-        return $this->connectionPool;
+        return $this->nodePool;
     }
 
     public function getLogger(): LoggerInterface
@@ -80,6 +89,9 @@ final class Transport implements ClientInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function setRetries(int $num): self
     {
         if ($num < 0) {
@@ -125,7 +137,7 @@ final class Transport implements ClientInterface
      * The header format is specified by the following regex:
      * ^[a-z]{1,}=[a-z0-9\.\-]{1,}(?:,[a-z]{1,}=[a-z0-9\.\-]+)*$
      */
-    public function setElasticMetaHeader(string $clientName, string $clientVersion): self
+    public function setElasticMetaHeader(string $clientName, string $clientVersion, bool $async = false): self
     {
         $phpSemVersion = sprintf("%d.%d.%d", PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION);
         $meta = sprintf(
@@ -134,7 +146,7 @@ final class Transport implements ClientInterface
             $this->purgePreReleaseTag($clientVersion),
             $phpSemVersion,
             $this->purgePreReleaseTag(self::VERSION),
-            0 // syncronous
+            $async ? 1 : 0 // 0=syncronous, 1=asynchronous
         );
         $lib = $this->getClientLibraryInfo();
         if (!empty($lib)) {
@@ -192,11 +204,11 @@ final class Transport implements ClientInterface
     /**
      * Setup the connection Uri 
      */
-    private function setupConnectionUri(Connection $connection, RequestInterface $request): RequestInterface
+    private function setupConnectionUri(Node $node, RequestInterface $request): RequestInterface
     {
-        $host = $connection->getUri()->getHost();
-        $port = $connection->getUri()->getPort();
-        $scheme = $connection->getUri()->getScheme();
+        $host = $node->getUri()->getHost();
+        $port = $node->getUri()->getPort();
+        $scheme = $node->getUri()->getScheme();
 
         return $request->withUri(
             $request->getUri()
@@ -206,53 +218,80 @@ final class Transport implements ClientInterface
         );
     }
 
-    public function sendRequest(RequestInterface $request): ResponseInterface
-    {   
-        // Set the host if empty
-        if (empty($request->getUri()->getHost())) {
-            $connection = $this->connectionPool->nextConnection();
-            $request = $this->setupConnectionUri($connection, $request);
-        }
-
+    private function decorateRequest(RequestInterface $request): RequestInterface
+    {
         $request = $this->setupHeaders($request);
-        $request = $this->setupUserInfo($request);
-        
-        $this->lastRequest = $request;
+        return $this->setupUserInfo($request);
+    }
+
+    private function logHeaders(MessageInterface $message): void
+    {
+        $this->logger->debug(sprintf(
+            "Headers: %s\nBody: %s",
+            json_encode($message->getHeaders()),
+            $message->getBody()->getContents()
+        ));
+    }
+
+    private function logRequest(string $title, RequestInterface $request): void
+    {
         $this->logger->info(sprintf(
-            "Send Request: %s %s", 
+            "%s: %s %s", 
+            $title,
             $request->getMethod(),
             (string) $request->getUri()
         ));
-        $this->logger->debug(sprintf(
-            "Headers: %s\nBody: %s",
-            json_encode($request->getHeaders()),
-            $request->getBody()->getContents()
-        ));
+        $this->logHeaders($request);
+    }
 
+    private function logResponse(string $title, ResponseInterface $response, int $retry): void
+    {
+        $this->logger->info(sprintf(
+            "%s (retry %d): %d",
+            $title,
+            $retry, 
+            $response->getStatusCode()
+        ));
+        $this->logHeaders($response);
+    }
+
+    /**
+     * @throws NoNodeAvailableException
+     * @throws ClientExceptionInterface
+     */
+    public function sendRequest(RequestInterface $request): ResponseInterface
+    {   
+        if (empty($request->getUri()->getHost())) {
+            $node = $this->nodePool->nextNode();
+            $request = $this->setupConnectionUri($node, $request);
+        }
+        $request = $this->decorateRequest($request);
+        $this->lastRequest = $request;
+        $this->logRequest("Request", $request);
+        
         $count = -1;
-        while ($count < $this->getRetries()) {
+        while (true) {
             try {
                 $count++;
                 $response = $this->client->sendRequest($request);
+
                 $this->lastResponse = $response;
-                
-                $this->logger->info(sprintf(
-                    "Response (retry %d): %d",
-                    $count, 
-                    $response->getStatusCode()
-                ));
-                $this->logger->debug(sprintf(
-                    "Headers: %s\nBody: %s",
-                    json_encode($response->getHeaders()),
-                    $response->getBody()->getContents()
-                ));
+                $this->logResponse("Response", $response, $count);
 
                 return $response;
             } catch (NetworkExceptionInterface $e) {
                 $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+                if (isset($node)) {
+                    $node->markAlive(false);
+                }
                 if ($count >= $this->getRetries()) {
-                    $connection->markAlive(false);
-                    throw $e;
+                    $exceededMsg = sprintf("Exceeded maximum number of retries (%d)", $this->getRetries());
+                    $this->logger->error($exceededMsg);
+                    throw new NoNodeAvailableException(sprintf("%s: %s", $exceededMsg, $e->getMessage()));
+                } 
+                if (isset($node)) {
+                    $node = $this->nodePool->nextNode();
+                    $request = $this->setupConnectionUri($node, $request);
                 }
             } catch (ClientExceptionInterface $e) {
                 $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
@@ -261,51 +300,86 @@ final class Transport implements ClientInterface
         } 
     }
 
+    public function setAsyncClient(HttpAsyncClient $asyncClient): self
+    {
+        $this->asyncClient = $asyncClient;
+        return $this;
+    }
+
+    /**
+     * @throws NoAsyncClientException
+     */
+    public function getAsyncClient(): HttpAsyncClient
+    {
+        if (!empty($this->asyncClient)) {
+            return $this->asyncClient;
+        }
+        if ($this->client instanceof HttpAsyncClient) {
+            return $this->client;
+        }
+        try {
+            $this->asyncClient = HttpAsyncClientDiscovery::find();
+        } catch (Exception $e) {
+            throw new NoAsyncClientException(sprintf(
+                "I did not find any HTTP library with HttpAsyncClient interface. " .
+                "Make sure to install a package providing \"php-http/async-client-implementation\". " .
+                "You can also set a specific async library using %s::setAsyncClient()",
+                self::class
+            ));
+        }
+        return $this->asyncClient;
+    }
+
+    /**
+     * @throws Exception
+     */
     public function sendAsyncRequest(RequestInterface $request): Promise
     {
-        // Set the host if empty
+        $client = $this->getAsyncClient();
+        $node = null;
         if (empty($request->getUri()->getHost())) {
-            $connection = $this->connectionPool->nextConnection();
-            $request = $this->setupConnectionUri($connection, $request);
+            $node = $this->nodePool->nextNode();
+            $request = $this->setupConnectionUri($node, $request);
         }
-
-        $request = $this->setupHeaders($request);
-        $request = $this->setupUserInfo($request);
-        
+        $request = $this->decorateRequest($request);
         $this->lastRequest = $request;
-        $this->logger->info(sprintf(
-            "Send Async Request: %s %s", 
-            $request->getMethod(),
-            (string) $request->getUri()
-        ));
-        $this->logger->debug(sprintf(
-            "Headers: %s\nBody: %s",
-            json_encode($request->getHeaders()),
-            $request->getBody()->getContents()
-        ));
+        $this->logRequest("Async Request", $request);
 
-        $promise = $this->asyncClient->sendAsyncRequest($request);
-        $promise->then(
-            // onFulfilled
-            function (ResponseInterface $response) {
-                $this->lastResponse = $response;
+        $count = 0;
+        $promise = $client->sendAsyncRequest($request);
 
-                $this->logger->info(sprintf(
-                    "Async Response: %d", 
-                    $response->getStatusCode()
-                ));
-                $this->logger->debug(sprintf(
-                    "Headers: %s\nBody: %s",
-                    json_encode($response->getHeaders()),
-                    $response->getBody()->getContents()
-                ));
-            },
-            // onRejected
-            function (Exception $e) use ($connection) {
-                $connection->markAlive(false);
-                $this->logger->error(sprintf("Async error: %s", $e->getMessage()));
+        // onFulfilled callable
+        $onFulfilled = function (ResponseInterface $response) use (&$count) {
+            $this->lastResponse = $response;
+            $this->logResponse("Async Response", $response, $count);
+            return $response;
+        };
+
+        // onRejected callable
+        $onRejected = function (Exception $e) use ($client, $request, &$count, $promise, $node) {
+            $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+            if (isset($node)) {
+                $node->markAlive(false);
+                $node = $this->nodePool->nextNode();
+                $request = $this->setupConnectionUri($node, $request);
             }
-        );
+            $count++;
+            // Override the promise with another try
+            $promise = $client->sendAsyncRequest($request);
+            return $promise;
+        };
+        
+        // Add getRetries() callables using then()
+        for ($i=0; $i < $this->getRetries(); $i++) {
+            $promise = $promise->then($onFulfilled, $onRejected);
+        }
+        // Add the last getRetries()+1 callable for managing the exceeded error
+        $promise = $promise->then($onFulfilled, function(Exception $e) use (&$count) {
+            $exceededMsg = sprintf("Exceeded maximum number of retries (%d)", $this->getRetries());
+            $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+            $this->logger->error($exceededMsg);
+            throw new NoNodeAvailableException(sprintf("%s: %s", $exceededMsg, $e->getMessage()));
+        });
         return $promise;
     }
 
@@ -315,8 +389,9 @@ final class Transport implements ClientInterface
      */
     private function getOSVersion(): string
     {
-        if ($this->OSVersion === null) {
-            $this->OSVersion = strpos(strtolower(ini_get('disable_functions')), 'php_uname') !== false
+        if (!isset($this->OSVersion)) {
+            $disable_functions = (string) ini_get('disable_functions');
+            $this->OSVersion = strpos(strtolower($disable_functions), 'php_uname') !== false
                 ? ''
                 : php_uname("r");
         }

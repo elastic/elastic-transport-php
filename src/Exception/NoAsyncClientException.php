@@ -16,7 +16,7 @@ namespace Elastic\Transport\Exception;
 
 use RuntimeException;
 
-class UndefinedPropertyException extends RuntimeException implements TransportException
+class NoAsyncClientException extends RuntimeException implements TransportException
 {
 
 }

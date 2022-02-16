@@ -12,11 +12,21 @@
  */
 declare(strict_types=1);
 
-namespace Elastic\Transport\Exception;
+namespace Elastic\Transport\NodePool\Selector;
 
-use RuntimeException;
+use Elastic\Transport\NodePool\Node;
 
-class UndefinedPropertyException extends RuntimeException implements TransportException
-{
+interface SelectorInterface
+{  
+    public function nextNode(): Node;
 
+    /**
+     * @param Node[] $nodes
+     */
+    public function setNodes(array $nodes): void;
+
+    /**
+     * @return Node[]
+     */
+    public function getNodes(): array;
 }
