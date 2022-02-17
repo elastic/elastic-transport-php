@@ -1,6 +1,6 @@
 # Changelog
 
-## 8.0.0-RC1
+## 8.0.0-RC1 (2021-02-17)
 
 This the first release candidate for 8.0.0 it contains some new
 features and changes with the previous 7.x Elastic client.
@@ -26,6 +26,7 @@ features and changes with the previous 7.x Elastic client.
 - added the `Transport::setRetries()` function to specify the number
   of HTTP request retries to apply. If the HTTP failures exceed the
   number of retries the client generates a `NoNodeAvailableException`
+
 ## 7.14.0 (2021-08-03)
 
 Release created to be compatible with 7.14 Elastic clients
