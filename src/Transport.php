@@ -270,7 +270,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
         $this->logRequest("Request", $request);
         
         $count = -1;
-        while (true) {
+        while ($count < $this->getRetries()) {
             try {
                 $count++;
                 $response = $this->client->sendRequest($request);
@@ -283,13 +283,6 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
                 if (isset($node)) {
                     $node->markAlive(false);
-                }
-                if ($count >= $this->getRetries()) {
-                    $exceededMsg = sprintf("Exceeded maximum number of retries (%d)", $this->getRetries());
-                    $this->logger->error($exceededMsg);
-                    throw new NoNodeAvailableException(sprintf("%s: %s", $exceededMsg, $e->getMessage()));
-                } 
-                if (isset($node)) {
                     $node = $this->nodePool->nextNode();
                     $request = $this->setupConnectionUri($node, $request);
                 }
@@ -297,7 +290,10 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
                 throw $e;
             }
-        } 
+        }
+        $exceededMsg = sprintf("Exceeded maximum number of retries (%d)", $this->getRetries());
+        $this->logger->error($exceededMsg);
+        throw new NoNodeAvailableException($exceededMsg);
     }
 
     public function setAsyncClient(HttpAsyncClient $asyncClient): self
@@ -356,7 +352,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
         };
 
         // onRejected callable
-        $onRejected = function (Exception $e) use ($client, $request, &$count, $promise, $node) {
+        $onRejected = function (Exception $e) use ($client, $request, &$count, $node) {
             $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
             if (isset($node)) {
                 $node->markAlive(false);
@@ -364,9 +360,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 $request = $this->setupConnectionUri($node, $request);
             }
             $count++;
-            // Override the promise with another try
-            $promise = $client->sendAsyncRequest($request);
-            return $promise;
+            // No more async request since we need to rerurn a response :-(
+            // This will be changed when merged https://github.com/php-http/httplug/pull/168
+            return $client->sendAsyncRequest($request)->wait();
         };
         
         // Add getRetries() callables using then()
