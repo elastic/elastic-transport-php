@@ -1,5 +1,10 @@
 # Changelog
 
+## 8.0.0-RC2 (2021-02-23)
+
+This RC2 release uses `httplug` v2.3.0 to provide a full retry async mechanism
+thanks to PR https://github.com/php-http/httplug/pull/168.
+
 ## 8.0.0-RC1 (2021-02-17)
 
 This the first release candidate for 8.0.0 it contains some new
