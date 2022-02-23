@@ -360,9 +360,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 $request = $this->setupConnectionUri($node, $request);
             }
             $count++;
-            // No more async request since we need to rerurn a response :-(
-            // This will be changed when merged https://github.com/php-http/httplug/pull/168
-            return $client->sendAsyncRequest($request)->wait();
+            return $client->sendAsyncRequest($request);
         };
         
         // Add getRetries() callables using then()
