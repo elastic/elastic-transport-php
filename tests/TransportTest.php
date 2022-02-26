@@ -14,6 +14,10 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Test;
 
+use Elastic\Transport\Async\OnFailureDefault;
+use Elastic\Transport\Async\OnFailureInterface;
+use Elastic\Transport\Async\OnSuccessDefault;
+use Elastic\Transport\Async\OnSuccessInterface;
 use Elastic\Transport\Exception\NoNodeAvailableException;
 use Elastic\Transport\NodePool\Node;
 use Elastic\Transport\NodePool\NodePoolInterface;
@@ -424,5 +428,33 @@ final class TransportTest extends TestCase
         $request = $this->requestFactory->createRequest('GET', 'http://localhost');
         $response = $this->transport->sendAsyncRequest($request);
         $this->assertInstanceOf(Promise::class, $response);
+    }
+
+    public function testSetAsyncOnSuccess()
+    {
+        $onSuccess = $this->createStub(OnSuccessInterface::class);
+        $result = $this->transport->setAsyncOnSuccess($onSuccess);
+        $this->assertEquals($this->transport, $result);
+        $this->assertEquals($onSuccess, $this->transport->getAsyncOnSuccess());
+    }
+
+    public function testGetAsyncOnSuccessReturnsDefault()
+    {
+        $onSuccess = $this->transport->getAsyncOnSuccess();
+        $this->assertInstanceOf(OnSuccessDefault::class, $onSuccess);
+    }
+
+    public function testSetAsyncOnFailure()
+    {
+        $onFailure = $this->createStub(OnFailureInterface::class);
+        $result = $this->transport->setAsyncOnFailure($onFailure);
+        $this->assertEquals($this->transport, $result);
+        $this->assertEquals($onFailure, $this->transport->getAsyncOnFailure());
+    }
+
+    public function testGetAsyncOnFailureReturnsDefault()
+    {
+        $onFailure = $this->transport->getAsyncOnFailure();
+        $this->assertInstanceOf(OnFailureDefault::class, $onFailure);
     }
 }

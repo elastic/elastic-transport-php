@@ -15,6 +15,10 @@ declare(strict_types=1);
 namespace Elastic\Transport;
 
 use Composer\InstalledVersions;
+use Elastic\Transport\Async\OnFailureDefault;
+use Elastic\Transport\Async\OnFailureInterface;
+use Elastic\Transport\Async\OnSuccessDefault;
+use Elastic\Transport\Async\OnSuccessInterface;
 use Elastic\Transport\NodePool\Node;
 use Elastic\Transport\NodePool\NodePoolInterface;
 use Elastic\Transport\Exception\InvalidArgumentException;
@@ -57,6 +61,8 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private string $OSVersion;
     private int $retries = 0;
     private HttpAsyncClient $asyncClient;
+    private OnSuccessInterface $onAsyncSuccess;
+    private OnFailureInterface $onAsyncFailure;
 
     public function __construct(
         ClientInterface $client,
@@ -326,6 +332,34 @@ final class Transport implements ClientInterface, HttpAsyncClient
         return $this->asyncClient;
     }
 
+    public function setAsyncOnSuccess(OnSuccessInterface $success): self
+    {
+        $this->onAsyncSuccess = $success;
+        return $this;
+    }
+
+    public function getAsyncOnSuccess(): OnSuccessInterface
+    {
+        if (empty($this->onAsyncSuccess)) {
+            $this->onAsyncSuccess = new OnSuccessDefault();
+        }
+        return $this->onAsyncSuccess;
+    }
+
+    public function setAsyncOnFailure(OnFailureInterface $failure): self
+    {
+        $this->onAsyncFailure = $failure;
+        return $this;
+    }
+
+    public function getAsyncOnFailure(): OnFailureInterface
+    {
+        if (empty($this->onAsyncFailure)) {
+            $this->onAsyncFailure = new OnFailureDefault();
+        }
+        return $this->onAsyncFailure;
+    }
+
     /**
      * @throws Exception
      */
@@ -348,12 +382,13 @@ final class Transport implements ClientInterface, HttpAsyncClient
         $onFulfilled = function (ResponseInterface $response) use (&$count) {
             $this->lastResponse = $response;
             $this->logResponse("Async Response", $response, $count);
-            return $response;
+            return $this->getAsyncOnSuccess()->success($response, $count);
         };
 
         // onRejected callable
         $onRejected = function (Exception $e) use ($client, $request, &$count, $node) {
             $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+            $this->getAsyncOnFailure()->failure($e, $request, $count, $node ?? null);
             if (isset($node)) {
                 $node->markAlive(false);
                 $node = $this->nodePool->nextNode();
