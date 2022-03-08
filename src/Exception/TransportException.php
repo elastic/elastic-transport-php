@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Exception;
 
-interface TransportException
+use Throwable;
+
+interface TransportException extends Throwable
 {
 
 }
