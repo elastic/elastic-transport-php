@@ -1,18 +1,21 @@
 # Changelog
+## 8.0.0-RC4 (2022-03-08)
 
-## 8.0.0-RC3 (2021-02-26)
+Added the `TransportException` to extends the `Throwable`interface.
+
+## 8.0.0-RC3 (2022-02-26)
 
 This RC3 release introduces the `OnSuccessInterface` and `OnFailureInterface`
 for manage the async code with the execution of a custom function during the
 return of `OnSuccess` and during the execution of `OnFailure`. As default behaviour
 the `OnSuccessDefault` and `OnFailureDefault` does not perform any operations.
 
-## 8.0.0-RC2 (2021-02-23)
+## 8.0.0-RC2 (2022-02-23)
 
 This RC2 release uses `httplug` v2.3.0 to provide a full retry async mechanism
 thanks to PR https://github.com/php-http/httplug/pull/168.
 
-## 8.0.0-RC1 (2021-02-17)
+## 8.0.0-RC1 (2022-02-17)
 
 This is the first release candidate for 8.0.0 containing some new
 features and changes compared with the previous 7.x Elastic transport.
