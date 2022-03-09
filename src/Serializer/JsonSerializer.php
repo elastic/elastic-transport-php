@@ -37,6 +37,9 @@ class JsonSerializer implements SerializerInterface
         if (empty($data)) {
             return '{}';
         }
+        if (is_string($data)) {
+            return $data;
+        }
         try {
             $removeNull = $options['remove_null'] ?? true;
             if ($removeNull) {
