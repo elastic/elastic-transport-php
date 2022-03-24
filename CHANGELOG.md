@@ -1,4 +1,9 @@
 # Changelog
+
+## 8.0.0 (2022-03-24)
+
+Finally, the 8.0.0 GA.
+
 ## 8.0.0-RC4 (2022-03-08)
 
 Added the `TransportException` to extends the `Throwable`interface.
