@@ -4,20 +4,22 @@
  *
  * @link      https://github.com/elastic/elastic-transport-php
  * @copyright Copyright (c) Elasticsearch B.V (https://www.elastic.co)
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @license   https://opensource.org/licenses/MIT MIT License
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * Elasticsearch B.V licenses this file to you under the MIT License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);
 
 namespace Elastic\Transport;
 
-use Elastic\Transport\ConnectionPool\ConnectionPoolInterface;
-use Elastic\Transport\ConnectionPool\SimpleConnectionPool;
+use Elastic\Transport\NodePool\NodePoolInterface;
+use Elastic\Transport\NodePool\SimpleNodePool;
 use Elastic\Transport\Exception;
-use GuzzleHttp\Client as GuzzleClient;
+use Elastic\Transport\NodePool\Resurrect\NoResurrect;
+use Elastic\Transport\NodePool\Selector\RoundRobin;
+use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -25,10 +27,10 @@ use Throwable;
 
 class TransportBuilder
 {
-    protected $client;
-    protected $connectionPool;
-    protected $logger;
-    protected $hosts = [];
+    protected ClientInterface $client;
+    protected NodePoolInterface $nodePool;
+    protected LoggerInterface $logger;
+    protected array $hosts = [];
 
     final public function __construct()
     {
@@ -45,16 +47,43 @@ class TransportBuilder
         return $this;
     }
 
-    public function setConnectionPool(ConnectionPoolInterface $connectionPool): self
+    public function getClient(): ClientInterface
     {
-        $this->connectionPool = $connectionPool;
+        if (empty($this->client)) {
+            $this->client = Psr18ClientDiscovery::find();
+        }
+        return $this->client;
+    }
+
+    public function setNodePool(NodePoolInterface $nodePool): self
+    {
+        $this->nodePool = $nodePool;
         return $this;
+    }
+
+    public function getNodePool(): NodePoolInterface
+    {
+        if (empty($this->nodePool)) {
+            $this->nodePool = new SimpleNodePool(
+                new RoundRobin(),
+                new NoResurrect()
+            );
+        }
+        return $this->nodePool;
     }
 
     public function setLogger(LoggerInterface $logger): self
     {
         $this->logger = $logger;
         return $this;
+    }
+
+    public function getLogger(): LoggerInterface
+    {
+        if (empty($this->logger)) {
+            $this->logger = new NullLogger();
+        }
+        return $this->logger;
     }
 
     public function setHosts(array $hosts): self
@@ -76,15 +105,11 @@ class TransportBuilder
 
     public function build(): Transport
     {
-        $connectionPool = $this->connectionPool ?? new SimpleConnectionPool;
-        $connectionPool->setHosts($this->hosts);
-
-        $transport = new Transport(
-            $this->client ?? new GuzzleClient,
-            $connectionPool,
-            $this->logger ?? new NullLogger
+        return new Transport(
+            $this->getClient(),
+            $this->getNodePool()->setHosts($this->hosts),
+            $this->getLogger()
         );
-        return $transport;
     }
 
     /**
