@@ -1,5 +1,10 @@
 # Changelog
 
+## 8.0.1 (2022-03-30)
+
+- Support of `psr/log` v1, 2 and 3 to fix the dependency with `elasticsearch/elasticsearch`.
+  [a413687](https://github.com/elastic/elastic-transport-php/commit/a413687ae0fcc3f949b02935731a42a301b383ad)
+  
 ## 8.0.0 (2022-03-24)
 
 Finally, the 8.0.0 GA.
