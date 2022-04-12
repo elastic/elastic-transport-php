@@ -19,7 +19,6 @@ use Elastic\Transport\NodePool\Node;
 use Elastic\Transport\NodePool\NodePoolInterface;
 use Elastic\Transport\Transport;
 use Http\Client\Exception\TransferException;
-use Http\Client\Promise\HttpFulfilledPromise;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Mock\Client;
 use Http\Promise\Promise;
@@ -29,7 +28,6 @@ use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\Test\TestLogger;
 
 final class TransportWithRetriesTest extends TestCase
 {
@@ -45,7 +43,10 @@ final class TransportWithRetriesTest extends TestCase
     {
         $this->client = new Client();
         $this->nodePool = $this->createStub(NodePoolInterface::class);
-        $this->logger = new TestLogger();
+        
+        $testLogger = sprintf("\Elastic\Transport\Test\TestLogger%d", explode('.',PHP_VERSION)[0]);
+        $this->logger = new $testLogger;
+
         $this->transport = new Transport($this->client, $this->nodePool, $this->logger);
 
         $this->requestFactory = Psr17FactoryDiscovery::findRequestFactory();

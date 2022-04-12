@@ -21,8 +21,7 @@ use Elastic\Transport\Transport;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
-
-use Psr\Log\Test\TestLogger;
+use Psr\Log\NullLogger;
 
 final class SimpleNodePool_RoundRobin_NoResurrectTest extends TestCase
 {
@@ -39,7 +38,7 @@ final class SimpleNodePool_RoundRobin_NoResurrectTest extends TestCase
             new RoundRobin(),
             new NoResurrect()
         );
-        $this->logger = new TestLogger();
+        $this->logger = new NullLogger();
         $this->transport = new Transport($this->client, $this->nodePool, $this->logger);
 
         $this->requestFactory = Psr17FactoryDiscovery::findRequestFactory();
