@@ -1,5 +1,9 @@
 # Changelog
 
+## 8.1.0 (2022-04-12)
+
+- Release created to be compatible with 8.1 Elastic clients
+  
 ## 8.0.1 (2022-03-30)
 
 - Support of `psr/log` v1, 2 and 3 to fix the dependency with `elasticsearch/elasticsearch`.
