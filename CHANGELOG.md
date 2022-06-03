@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.17.0 (2022-06-04)
+
+Release created to be compatible with 7.17 Elastic clients
+
 ## 7.16.0 (2021-12-14)
 
 Release created to be compatible with 7.16 Elastic clients
