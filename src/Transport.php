@@ -63,59 +63,6 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private HttpAsyncClient $asyncClient;
     private OnSuccessInterface $onAsyncSuccess;
     private OnFailureInterface $onAsyncFailure;
-=======
-    const VERSION = "7.16.0";
-
-    /**
-     * @var ClientInterface
-     */
-    private $client;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var ConnectionPoolInterface
-     */
-    private $connectionPool;
-
-    /**
-     * @var array
-     */
-    private $headers = [];
-
-    /**
-     * @var array
-     */
-    private $temporaryHeaders = [];
-
-    /**
-     * @var string
-     */
-    private $user;
-
-    /**
-     * @var string
-     */
-    private $password;
-
-    /**
-     * @var RequestInterface
-     */
-    private $lastRequest;
-
-    /**
-     * @var ResponseInterface
-     */
-    private $lastResponse;
-
-    /**
-     * @var string
-     */
-    private $OSVersion;
->>>>>>> Prep for v7.16.0
 
     public function __construct(
         ClientInterface $client,
