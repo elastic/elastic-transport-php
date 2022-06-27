@@ -1,5 +1,9 @@
 # Changelog
 
+## 8.3.0 (2022-06-27)
+
+- Release created to be compatible with 8.3 Elastic clients
+
 ## 8.2.0 (2022-06-22)
 
 - Release created to be compatible with 8.2 Elastic clients
