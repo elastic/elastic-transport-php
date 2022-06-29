@@ -199,9 +199,11 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private function setupUserInfo(RequestInterface $request): RequestInterface
     {
         $uri = $request->getUri();
+        $encodedUser = urlencode($this->user);
+        $encodedPassword = urlencode($this->password);
         if (empty($uri->getUserInfo())) {
             if (isset($this->user)) {
-                $request = $request->withUri($uri->withUserInfo($this->user, $this->password));
+                $request = $request->withUri($uri->withUserInfo($encodedUser, $encodedPassword));
             }
         }
         return $request;
