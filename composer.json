@@ -18,7 +18,8 @@
         "psr/http-message": "^1.0",
         "psr/log": "^1 || ^2 || ^3",
         "php-http/discovery": "^1.14",
-        "php-http/httplug": "^2.3"
+        "php-http/httplug": "^2.3",
+        "composer-runtime-api": "^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",
