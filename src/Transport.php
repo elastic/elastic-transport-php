@@ -212,15 +212,13 @@ final class Transport implements ClientInterface, HttpAsyncClient
      */
     private function setupConnectionUri(Node $node, RequestInterface $request): RequestInterface
     {
-        $host = $node->getUri()->getHost();
-        $port = $node->getUri()->getPort();
-        $scheme = $node->getUri()->getScheme();
-
+        $uri = $node->getUri();
+        
         return $request->withUri(
             $request->getUri()
-                ->withHost($host)
-                ->withPort($port)
-                ->withScheme($scheme)
+                ->withHost($uri->getHost())
+                ->withPort($uri->getPort())
+                ->withScheme($uri->getScheme())
         );
     }
 
