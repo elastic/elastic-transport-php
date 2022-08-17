@@ -48,7 +48,7 @@ use function strtolower;
 
 final class Transport implements ClientInterface, HttpAsyncClient
 {
-    const VERSION = "8.x";
+    const VERSION = "8.4.0";
 
     private ClientInterface $client;
     private LoggerInterface $logger;

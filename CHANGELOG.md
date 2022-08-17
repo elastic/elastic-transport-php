@@ -1,5 +1,13 @@
 # Changelog
 
+## 8.4.0 (2022-08-17)
+
+- Release created to be compatible with 8.4 Elastic clients
+- Added meta header info for Symfony HTTP client
+  [#9](https://github.com/elastic/elastic-transport-php/pull/9)
+- Added composer-runtime-api v2 for InstalledVersions
+  [#10](https://github.com/elastic/elastic-transport-php/pull/10)
+
 ## 8.3.0 (2022-06-27)
 
 - Release created to be compatible with 8.3 Elastic clients
