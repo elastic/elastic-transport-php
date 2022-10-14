@@ -27,6 +27,7 @@ use Http\Client\HttpAsyncClient;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Mock\Client;
 use Http\Promise\Promise;
+use Nyholm\Psr7\Request;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -258,20 +259,20 @@ final class TransportTest extends TestCase
         $this->nodePool->method('nextNode')
             ->willReturn($this->node);
 
-        $request = $this->requestFactory->createRequest('GET', '/');
+        $request = new Request('GET', '/', ['X-Baz' => 'qux'], "Hi");
         $this->transport->sendRequest($request);
 
         $this->assertTrue($this->logger->hasInfo([
             'message' => "Request: GET http://localhost/"
         ]));
         $this->assertTrue($this->logger->hasDebug([
-            'message' => "Headers: {\"Host\":[\"localhost\"]}\nBody: "
+            'message' => "Headers: {\"Host\":[\"localhost\"],\"X-Baz\":[\"qux\"]}\nBody: Hi"
         ]));
         $this->assertTrue($this->logger->hasInfo([
             'message' => sprintf("Response (retry 0): %s", $statusCode),
         ]));
         $this->assertTrue($this->logger->hasDebug([
-            'message' => "Headers: {\"X-Foo\":[\"Bar\"]}\nBody: "
+            'message' => "Headers: {\"X-Foo\":[\"Bar\"]}\nBody: " . $msg
         ]));
     }
 

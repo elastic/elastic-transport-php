@@ -233,7 +233,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
         $this->logger->debug(sprintf(
             "Headers: %s\nBody: %s",
             json_encode($message->getHeaders()),
-            $message->getBody()->getContents()
+            (string) $message->getBody()
         ));
     }
 
