@@ -125,7 +125,7 @@ class TransportBuilder
             return sprintf("https://%s.%s", $es, $uri);
         } catch (Throwable $t) {
             throw new Exception\CloudIdParseException(
-                'Could ID not valid'
+                'Cloud ID not valid'
             );
         }
     }
