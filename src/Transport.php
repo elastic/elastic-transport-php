@@ -244,7 +244,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
             $title,
             $request->getMethod(),
             (string) $request->getUri()
-        ));
+        ), [
+            'request' => $request
+        ]);
         $this->logHeaders($request);
     }
 
@@ -255,7 +257,10 @@ final class Transport implements ClientInterface, HttpAsyncClient
             $title,
             $retry, 
             $response->getStatusCode()
-        ));
+        ), [
+            'response' => $response,
+            'retry' => $retry
+        ]);
         $this->logHeaders($response);
     }
 
