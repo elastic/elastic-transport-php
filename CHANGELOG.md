@@ -1,5 +1,11 @@
 # Changelog
 
+## 8.5.0 (2022-10-14)
+
+- Release created to be compatible with 8.5 Elastic clients
+- Fixed the full body message in debug() log for Transport
+  [#11](https://github.com/elastic/elastic-transport-php/pull/11) 
+
 ## 8.4.0 (2022-08-17)
 
 - Release created to be compatible with 8.4 Elastic clients
