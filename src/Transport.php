@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Elastic\Transport;
 
 use Composer\InstalledVersions;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Transport\Async\OnFailureDefault;
 use Elastic\Transport\Async\OnFailureInterface;
 use Elastic\Transport\Async\OnSuccessDefault;
@@ -385,6 +386,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
 
         // onRejected callable
         $onRejected = function (Exception $e) use ($client, $request, &$count, $node) {
+            if ($e instanceof ClientResponseException) {
+                throw $e;
+            }
             $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
             $this->getAsyncOnFailure()->failure($e, $request, $count, $node ?? null);
             if (isset($node)) {
@@ -402,6 +406,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
         }
         // Add the last getRetries()+1 callable for managing the exceeded error
         $promise = $promise->then($onFulfilled, function(Exception $e) use (&$count) {
+            if ($e instanceof ClientResponseException) {
+                throw $e;
+            }
             $exceededMsg = sprintf("Exceeded maximum number of retries (%d)", $this->getRetries());
             $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
             $this->logger->error($exceededMsg);
