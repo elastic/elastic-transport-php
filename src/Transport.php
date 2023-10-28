@@ -219,6 +219,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 ->withHost($uri->getHost())
                 ->withPort($uri->getPort())
                 ->withScheme($uri->getScheme())
+                ->withPath($uri->getPath())
         );
     }
 
