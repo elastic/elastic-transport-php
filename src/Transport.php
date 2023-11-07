@@ -48,7 +48,7 @@ use function strtolower;
 
 final class Transport implements ClientInterface, HttpAsyncClient
 {
-    const VERSION = "8.6.0";
+    const VERSION = "8.7.0";
 
     private ClientInterface $client;
     private LoggerInterface $logger;
@@ -448,8 +448,8 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private function getClientLibraryInfo(): array
     {
         $clientClass = get_class($this->client);
-        if (false !== strpos($clientClass, 'GuzzleHttp\\Client')) {
-            return ['gu', InstalledVersions::getPrettyVersion('guzzlehttp/guzzle')];
+        if (false !== strpos($clientClass, 'GuzzleHttp\Client')) {
+            return ['gu', InstalledVersions::getPrettyVersion('guzzlehttp/guzzle')]; 
         }
         if (false !== strpos($clientClass, 'Symfony\Component\HttpClient')) {
             return ['sy', InstalledVersions::getPrettyVersion('symfony/http-client')];
