@@ -213,13 +213,21 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private function setupConnectionUri(Node $node, RequestInterface $request): RequestInterface
     {
         $uri = $node->getUri();
+        $path = $request->getUri()->getPath();
         
+        $nodePath = $uri->getPath();
+        // If the node has a path we need to use it as prefix for the existing path
+        // @see https://github.com/elastic/elastic-transport-php/pull/20
+        if (!empty($nodePath)) {
+            $path = sprintf("%s/%s", rtrim($nodePath, '/'), ltrim($path,'/'));
+        }
+
         return $request->withUri(
             $request->getUri()
                 ->withHost($uri->getHost())
                 ->withPort($uri->getPort())
                 ->withScheme($uri->getScheme())
-                ->withPath($uri->getPath())
+                ->withPath($path)
         );
     }
 
@@ -440,7 +448,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private function getClientLibraryInfo(): array
     {
         $clientClass = get_class($this->client);
-        if ($clientClass === 'GuzzleHttp\Client') {
+        if (false !== strpos($clientClass, 'GuzzleHttp\\Client')) {
             return ['gu', InstalledVersions::getPrettyVersion('guzzlehttp/guzzle')];
         }
         if (false !== strpos($clientClass, 'Symfony\Component\HttpClient')) {
