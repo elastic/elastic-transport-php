@@ -221,7 +221,15 @@ final class Transport implements ClientInterface, HttpAsyncClient
         if (!empty($nodePath)) {
             $path = sprintf("%s/%s", rtrim($nodePath, '/'), ltrim($path,'/'));
         }
-
+        // If the user information is not in the request, we check if it is present in the node uri
+        // @see https://github.com/elastic/elastic-transport-php/issues/18
+        if (empty($request->getUri()->getUserInfo()) && !empty($uri->getUserInfo())) {
+            $userInfo = explode(':', $uri->getUserInfo());
+            $request = $request->withUri(
+                $request->getUri()
+                    ->withUserInfo($userInfo[0], $userInfo[1] ?? null)
+            );
+        }
         return $request->withUri(
             $request->getUri()
                 ->withHost($uri->getHost())
