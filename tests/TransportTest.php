@@ -98,6 +98,23 @@ final class TransportTest extends TestCase
         $this->assertEquals($expectedResponse, $response);
     }
 
+    public function testSendRequestWithUriThatContainsAPath()
+    {
+        $url = 'http://localhost/subfolder';
+        $expectedResponse = $this->responseFactory->createResponse(200);
+        $this->client->addResponse($expectedResponse);
+
+        $this->node->method('getUri')->willReturn($this->uriFactory->createUri($url));
+        $this->nodePool->method('nextNode')->willReturn($this->node);
+
+        $request = $this->requestFactory->createRequest('GET', '/test');
+        $response = $this->transport->sendRequest($request);
+
+        $this->assertEquals($url . '/test', (string) $this->client->getLastRequest()->getUri());
+        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertEquals($expectedResponse, $response);
+    }
+
     public function testSendRequestWithNetworkException()
     {
         $request = $this->requestFactory->createRequest('GET', '/');
