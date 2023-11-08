@@ -427,6 +427,40 @@ final class TransportTest extends TestCase
         $this->assertEquals(1, $this->transport->getRetries());
     }
     
+    public function testSendRequestWithUserAndPasswordInHost()
+    {
+        $url = 'http://user:password@localhost/subfolder';
+        $expectedResponse = $this->responseFactory->createResponse(200);
+        $this->client->addResponse($expectedResponse);
+
+        $this->node->method('getUri')->willReturn($this->uriFactory->createUri($url));
+        $this->nodePool->method('nextNode')->willReturn($this->node);
+
+        $request = $this->requestFactory->createRequest('GET', '/');
+        $response = $this->transport->sendRequest($request);
+
+        $lastRequest = $this->client->getLastRequest();
+        
+        $this->assertEquals('user:password', $lastRequest->getUri()->getUserInfo());
+    }
+
+    public function testSendRequestWithUserInHost()
+    {
+        $url = 'http://user@localhost/subfolder';
+        $expectedResponse = $this->responseFactory->createResponse(200);
+        $this->client->addResponse($expectedResponse);
+
+        $this->node->method('getUri')->willReturn($this->uriFactory->createUri($url));
+        $this->nodePool->method('nextNode')->willReturn($this->node);
+
+        $request = $this->requestFactory->createRequest('GET', '/');
+        $response = $this->transport->sendRequest($request);
+
+        $lastRequest = $this->client->getLastRequest();
+        
+        $this->assertEquals('user', $lastRequest->getUri()->getUserInfo());
+    }
+
     /**
      * @group async
      */
@@ -477,4 +511,6 @@ final class TransportTest extends TestCase
         $onFailure = $this->transport->getAsyncOnFailure();
         $this->assertInstanceOf(OnFailureDefault::class, $onFailure);
     }
+
+
 }
