@@ -28,6 +28,8 @@ use Exception;
 use Http\Client\HttpAsyncClient;
 use Http\Discovery\HttpAsyncClientDiscovery;
 use Http\Promise\Promise;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\API\Trace\TracerInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
@@ -48,7 +50,7 @@ use function strtolower;
 
 final class Transport implements ClientInterface, HttpAsyncClient
 {
-    const VERSION = "8.8.0";
+    const VERSION = "8.9.0";
 
     private ClientInterface $client;
     private LoggerInterface $logger;
@@ -63,7 +65,8 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private HttpAsyncClient $asyncClient;
     private OnSuccessInterface $onAsyncSuccess;
     private OnFailureInterface $onAsyncFailure;
-
+    private TracerInterface $otelTracer;
+    
     public function __construct(
         ClientInterface $client,
         NodePoolInterface $nodePool,
@@ -87,6 +90,22 @@ final class Transport implements ClientInterface, HttpAsyncClient
     public function getLogger(): LoggerInterface
     {
         return $this->logger;
+    }
+
+    public function getOTelTracer(): TracerInterface
+    {
+        if (empty($this->otelTracer)) {
+            $this->otelTracer = OpenTelemetry::getTracer(
+                Globals::tracerProvider()
+            );
+        }
+        return $this->otelTracer;
+    }
+
+    public function setOTelTracer(TracerInterface $tracer): self
+    {
+        $this->otelTracer = $tracer;
+        return $this;
     }
 
     public function setHeader(string $name, string $value): self
@@ -285,7 +304,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
      * @throws NoNodeAvailableException
      * @throws ClientExceptionInterface
      */
-    public function sendRequest(RequestInterface $request): ResponseInterface
+    public function sendRequest(RequestInterface $request, array $opts = []): ResponseInterface
     {   
         if (empty($request->getUri()->getHost())) {
             $node = $this->nodePool->nextNode();
@@ -294,11 +313,27 @@ final class Transport implements ClientInterface, HttpAsyncClient
         $request = $this->decorateRequest($request);
         $this->lastRequest = $request;
         $this->logRequest("Request", $request);
+
+        // OpenTelemetry get tracer
+        if (getenv(OpenTelemetry::ENV_VARIABLE_ENABLED)) {
+            $tracer = $this->getOTelTracer();
+        }
         
         $count = -1;
         while ($count < $this->getRetries()) {
             try {
                 $count++;
+                // OpenTelemetry span start
+                if (!empty($tracer)) {
+                    $spanName = $opts['db.operation.name'] ?? $request->getUri()->getPath();
+                    $span = $tracer->spanBuilder($spanName)->startSpan();
+                    $span->setAttribute('http.request.method', $request->getMethod());
+                    $span->setAttribute('url.full', $this->getFullUrl($request));
+                    $span->setAttribute('server.address', $request->getUri()->getHost());
+                    $span->setAttribute('server.port', $request->getUri()->getPort());
+                    // @phpstan-ignore argument.type
+                    $span->setAttributes($opts);
+                }
                 $response = $this->client->sendRequest($request);
 
                 $this->lastResponse = $response;
@@ -307,6 +342,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 return $response;
             } catch (NetworkExceptionInterface $e) {
                 $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+                if (!empty($span)) {
+                    $span->setAttribute('error.type', $e->getMessage());
+                }
                 if (isset($node)) {
                     $node->markAlive(false);
                     $node = $this->nodePool->nextNode();
@@ -314,7 +352,15 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 }
             } catch (ClientExceptionInterface $e) {
                 $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
+                if (!empty($span)) {
+                    $span->setAttribute('error.type', $e->getMessage());
+                }
                 throw $e;
+            } finally {
+                 // OpenTelemetry span end
+                if (!empty($span)) {
+                    $span->end();
+                }
             }
         }
         $exceededMsg = sprintf("Exceeded maximum number of retries (%d)", $this->getRetries());
@@ -463,5 +509,25 @@ final class Transport implements ClientInterface, HttpAsyncClient
             return ['sy', InstalledVersions::getPrettyVersion('symfony/http-client')];
         }
         return [];
+    }
+
+    /**
+     * Return the full URL in the format
+     * scheme://host:port/path?query_string
+     */
+    private function getFullUrl(RequestInterface $request): string
+    {
+        $fullUrl = sprintf(
+            "%s://%s:%s%s", 
+            $request->getUri()->getScheme(),
+            $request->getUri()->getHost(),
+            $request->getUri()->getPort(),
+            $request->getUri()->getPath()
+        );
+        $queryString = $request->getUri()->getQuery();
+        if (!empty($queryString)) {
+            $fullUrl .= '?' . $queryString;
+        }
+        return $fullUrl;
     }
 }

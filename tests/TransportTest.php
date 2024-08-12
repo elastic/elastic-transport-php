@@ -21,13 +21,20 @@ use Elastic\Transport\Async\OnSuccessInterface;
 use Elastic\Transport\Exception\NoNodeAvailableException;
 use Elastic\Transport\NodePool\Node;
 use Elastic\Transport\NodePool\NodePoolInterface;
+use Elastic\Transport\OpenTelemetry;
 use Elastic\Transport\Transport;
+use Http\Client\Common\Exception\ClientErrorException;
+use Http\Client\Exception\NetworkException;
 use Http\Client\Exception\TransferException;
 use Http\Client\HttpAsyncClient;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Mock\Client;
 use Http\Promise\Promise;
 use Nyholm\Psr7\Request;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\SDK\Trace\SpanExporter\InMemoryExporter;
+use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
+use OpenTelemetry\SDK\Trace\TracerProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -48,6 +55,8 @@ final class TransportTest extends TestCase
     private RequestFactoryInterface $requestFactory;
     private ResponseFactoryInterface $responseFactory;
     private UriFactoryInterface $uriFactory;
+
+    private static InMemoryExporter $inMemory;
 
     public function setUp(): void
     {
@@ -131,7 +140,7 @@ final class TransportTest extends TestCase
         $this->nodePool->method('nextNode')
             ->willReturn($this->node);
 
-        $this->transport->sendRequest($request);    
+        $this->transport->sendRequest($request);
     }
 
     public function testSendRequestWithNetworkExceptionLogError()
@@ -512,5 +521,180 @@ final class TransportTest extends TestCase
         $this->assertInstanceOf(OnFailureDefault::class, $onFailure);
     }
 
+    public function testGetOtelTracer()
+    {
+        putenv(OpenTelemetry::ENV_VARIABLE_ENABLED.'=true');
+        $defaultTracer = OpenTelemetry::getTracer(
+            Globals::tracerProvider()
+        );
+        $this->assertEquals($defaultTracer, $this->transport->getOTelTracer());
+    }
 
+    public function testSetOtelTracer()
+    {
+        putenv(OpenTelemetry::ENV_VARIABLE_ENABLED.'=true');
+        $tracer = OpenTelemetry::getTracer(
+            new TracerProvider(
+                new SimpleSpanProcessor(new InMemoryExporter())
+            )
+        );
+        $this->transport->setOTelTracer($tracer);
+        $this->assertEquals($tracer, $this->transport->getOTelTracer());
+    }
+
+    public function testSendRequestWithOpenTelemetry()
+    {
+        putenv(OpenTelemetry::ENV_VARIABLE_ENABLED.'=true');
+
+        $expectedResponse = $this->responseFactory->createResponse(200);
+        $this->client->addResponse($expectedResponse);
+
+        $this->node->method('getUri')
+            ->willReturn($this->uriFactory->createUri('http://localhost:9200'));
+        $this->nodePool->method('nextNode')
+            ->willReturn($this->node);
+
+        $request = $this->requestFactory->createRequest('GET', '/');
+
+        // OpenTelemetry tracer
+        $inMemory = new InMemoryExporter();
+        $this->transport->setOTelTracer(
+            OpenTelemetry::getTracer(
+                new TracerProvider(
+                    new SimpleSpanProcessor($inMemory)
+                )
+            )
+        );
+        $response = $this->transport->sendRequest($request);
+        $spans = $inMemory->getSpans();
+        
+        $this->assertIsArray($spans);
+        $this->assertEquals(count($spans), 1);
+        $this->assertTrue($spans[0]->hasEnded());
+        
+        $attributes = $spans[0]->getAttributes();
+        $this->assertTrue($attributes->has('http.request.method'));
+        $this->assertEquals('GET', $attributes->get('http.request.method'));
+        $this->assertTrue($attributes->has('url.full'));
+        $this->assertEquals('http://localhost:9200/', $attributes->get('url.full'));
+        $this->assertTrue($attributes->has('server.address'));
+        $this->assertEquals('localhost', $attributes->get('server.address'));
+        $this->assertTrue($attributes->has('server.port'));
+        $this->assertEquals(9200, $attributes->get('server.port'));
+    }
+
+    public function testSendRequestWithOpenTelemetryAndOptions()
+    {
+        putenv(OpenTelemetry::ENV_VARIABLE_ENABLED.'=true');
+
+        $expectedResponse = $this->responseFactory->createResponse(200);
+        $this->client->addResponse($expectedResponse);
+
+        $this->node->method('getUri')
+            ->willReturn($this->uriFactory->createUri('http://localhost:9200'));
+        $this->nodePool->method('nextNode')
+            ->willReturn($this->node);
+
+        $request = $this->requestFactory->createRequest('GET', '/');
+        $this->transport = new Transport($this->client, $this->nodePool, $this->logger);
+
+        // OpenTelemetry tracer
+        $inMemory = new InMemoryExporter();
+        $this->transport->setOTelTracer(
+            OpenTelemetry::getTracer(
+                new TracerProvider(
+                    new SimpleSpanProcessor($inMemory)
+                )
+            )
+        );
+        $options = [
+            'foo' => 'bar'
+        ];
+        $response = $this->transport->sendRequest($request, $options);
+        $spans = $inMemory->getSpans();
+        
+        $this->assertIsArray($spans);
+        $this->assertEquals(count($spans), 1);
+        $this->assertTrue($spans[0]->hasEnded());
+        
+        $attributes = $spans[0]->getAttributes();
+        foreach ($options as $key => $value) {
+            $this->assertTrue($attributes->has($key));
+            $this->assertEquals($value, $attributes->get($key));
+        }
+    }
+
+    public function testOpenTelemetryWithNetworkException()
+    {
+        putenv(OpenTelemetry::ENV_VARIABLE_ENABLED.'=true');
+
+        $request = $this->requestFactory->createRequest('GET', '/');
+        $this->client->addException(new NetworkException('This is a network exception!', $request));
+  
+        // OpenTelemetry tracer
+        self::$inMemory = new InMemoryExporter();
+        $this->transport->setOTelTracer(
+            OpenTelemetry::getTracer(
+                new TracerProvider(
+                    new SimpleSpanProcessor(self::$inMemory)
+                )
+            )
+        );
+        $this->expectException(NoNodeAvailableException::class);
+        $response = $this->transport->sendRequest($request);
+    }
+
+    /**
+     * @depends testOpenTelemetryWithNetworkException
+     */
+    public function testOpenTelemetryWithNetworkExceptionSetErrorTypeAttribute() 
+    {
+        $spans = self::$inMemory->getSpans();
+        
+        $this->assertIsArray($spans);
+        $this->assertEquals(count($spans), 1);
+        $this->assertTrue($spans[0]->hasEnded());
+        
+        $attributes = $spans[0]->getAttributes();
+        $this->assertTrue($attributes->has('error.type'));
+        $this->assertEquals('This is a network exception!', $attributes->get('error.type'));
+    }
+
+    public function testOpenTelemetryWithClientException()
+    {
+        putenv(OpenTelemetry::ENV_VARIABLE_ENABLED.'=true');
+
+        $request = $this->requestFactory->createRequest('GET', '/');
+        $expectedResponse = $this->responseFactory->createResponse(400);
+
+        $this->client->addException(new ClientErrorException('This is a client exception!', $request, $expectedResponse));
+  
+        // OpenTelemetry tracer
+        self::$inMemory = new InMemoryExporter();
+        $this->transport->setOTelTracer(
+            OpenTelemetry::getTracer(
+                new TracerProvider(
+                    new SimpleSpanProcessor(self::$inMemory)
+                )
+            )
+        );
+        $this->expectException(ClientErrorException::class);
+        $response = $this->transport->sendRequest($request);
+    }
+
+    /**
+     * @depends testOpenTelemetryWithClientException
+     */
+    public function testOpenTelemetryWithClientExceptionSetErrorTypeAttribute() 
+    {
+        $spans = self::$inMemory->getSpans();
+        
+        $this->assertIsArray($spans);
+        $this->assertEquals(count($spans), 1);
+        $this->assertTrue($spans[0]->hasEnded());
+        
+        $attributes = $spans[0]->getAttributes();
+        $this->assertTrue($attributes->has('error.type'));
+        $this->assertEquals('This is a client exception!', $attributes->get('error.type'));
+    }
 }
