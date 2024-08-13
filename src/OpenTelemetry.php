@@ -39,18 +39,6 @@ class OpenTelemetry
      */
     const ENV_VARIABLE_BODY_SANITIZE_KEYS = 'OTEL_PHP_INSTRUMENTATION_ELASTICSEARCH_SEARCH_QUERY_SANITIZE_KEYS';
 
-    const SEARCH_ENDPOINTS = [
-        'search',
-        'async_search.submit',
-        'msearch',
-        'eql.search',
-        'terms_enum',
-        'search_template',
-        'msearch_template',
-        'render_search_template',
-        'esql.query'
-    ];
-
     const DEFAULT_SANITIZER_KEY_PATTERNS = [
         'password',
         'passwd',
