@@ -57,10 +57,21 @@ class OpenTelemetry
     ];
     const REDACTED_STRING = 'REDACTED';
 
-    private array $sanitizeKeys = [];
-    private string $bodyStrategy;
-
-    public function __construct()
+    public static function redactBody(string $body): string
+    {
+        switch (self::getBodyStrategy()) {
+            case 'sanitize':
+                $sanitizeKeys = getenv(self::ENV_VARIABLE_BODY_SANITIZE_KEYS);
+                $sanitizeKeys = false !== $sanitizeKeys ? explode(',', $sanitizeKeys): [];
+                return self::sanitizeBody($body, $sanitizeKeys);
+            case 'raw':
+                return $body;
+            default:
+                return '';
+        }
+    }
+    
+    private static function getBodyStrategy(): string
     {
         $strategy = getenv(self::ENV_VARIABLE_BODY_STRATEGY);
         if (false === $strategy) {
@@ -73,25 +84,9 @@ class OpenTelemetry
                 implode(',', self::ALLOWED_BODY_STRATEGIES)
             ));
         }
-        $this->bodyStrategy = $strategy;
-        $sanitizeKeys = getenv(self::ENV_VARIABLE_BODY_SANITIZE_KEYS);
-        if (false !== $sanitizeKeys) {
-            $this->sanitizeKeys = explode(',', $sanitizeKeys);
-        }
+        return $strategy;
     }
 
-    public function processBody(string $body): string
-    {
-        switch ($this->bodyStrategy) {
-            case 'sanitize':
-                return $this->sanitizeBody($body, $this->sanitizeKeys);
-            case 'raw':
-                return $body;
-            default:
-                return '';
-        }
-    }
-    
     public static function getTracer(TracerProviderInterface $tracerProvider): TracerInterface
     {
         return $tracerProvider->getTracer(
@@ -100,7 +95,7 @@ class OpenTelemetry
         );
     }
 
-    private function sanitizeBody(string $body, array $sanitizeKeys): string
+    private static function sanitizeBody(string $body, array $sanitizeKeys): string
     {
         if (empty($body)) {
             return '';

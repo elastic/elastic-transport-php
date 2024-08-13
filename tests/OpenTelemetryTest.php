@@ -16,6 +16,8 @@ namespace Elastic\Transport\Test;
 
 use Elastic\Transport\Exception\InvalidArgumentException;
 use Elastic\Transport\OpenTelemetry;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\API\Trace\TracerInterface;
 use PHPUnit\Framework\TestCase;
 
 final class OpenTelemetryTest extends TestCase
@@ -26,71 +28,64 @@ final class OpenTelemetryTest extends TestCase
         putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY);
     }
 
-    public function testConstructWithNoParams()
-    {
-        $otel = new OpenTelemetry();
-        $this->assertInstanceOf(OpenTelemetry::class, $otel);
-    }
-
-    public function testConstructWithEnvBodyStrategy()
-    {
-        putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY . '=sanitize');
-        $otel = new OpenTelemetry();
-        $this->assertInstanceOf(OpenTelemetry::class, $otel);
-    }
-
-    public function testConstructWithInvalidEnvBodyStrategy()
-    {
-        putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY . '=foo');
-        $this->expectException(InvalidArgumentException::class);
-        $otel = new OpenTelemetry();
-    }
-
-    public function testProcessBodyWithDefault()
+    public function testRedactBodyWithDefault()
     {
         $body = '{"password":"supersecret"}';
-        $otel = new OpenTelemetry();
         // Default is omit, it should returns an empty string
-        $this->assertEmpty($otel->processBody($body, 'search'));
+        $this->assertEmpty(OpenTelemetry::redactBody($body));
     }
 
-    public function testProcessBodyWithRaw()
+    public function testRedactBodyWithRaw()
     {
         $body = '{"password":"supersecret"}';
         putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY . '=raw');
-        $otel = new OpenTelemetry();
-        // Default is omit, it should returns an empty string
-        $this->assertEquals($body, $otel->processBody($body, 'search'));
+        // Raw strategy, it should returns the original body
+        $this->assertEquals($body, OpenTelemetry::redactBody($body));
     }
 
-    public function testProcessBodyWithSanitize()
+    public function testRedactBodyWithSanitize()
     {
         $body = '{"password":"supersecret"}';
         $sanitizeBody = sprintf('{"password":"%s"}', OpenTelemetry::REDACTED_STRING);
         putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY . '=sanitize');
-        $otel = new OpenTelemetry();
-        // Default is omit, it should returns an empty string
-        $this->assertEquals($sanitizeBody, $otel->processBody($body));
+        // Sanitize strategy, it should returns the redacted body
+        $this->assertEquals($sanitizeBody, OpenTelemetry::redactBody($body));
     }
 
-    public function testProcessBodyWithSanitizeUsingRegex()
+    public function testRedactBodyWithSanitizeUsingPartOfKey()
     {
         $body = '{"secret_key":"supersecret"}';
         $sanitizeBody = sprintf('{"secret_key":"%s"}', OpenTelemetry::REDACTED_STRING);
         putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY . '=sanitize');
-        $otel = new OpenTelemetry();
-        // Default is omit, it should returns an empty string
-        $this->assertEquals($sanitizeBody, $otel->processBody($body));
+        // Sanitize strategy, it should returns the redacted body
+        $this->assertEquals($sanitizeBody, OpenTelemetry::redactBody($body));
     }
 
-    public function testProcessBodyWithSanitizeUsingCustomRegex()
+    public function testRedactBodyWithSanitizeUsingCustomKey()
     {
         $body = '{"foo_bar":"supersecret"}';
         $sanitizeBody = sprintf('{"foo_bar":"%s"}', OpenTelemetry::REDACTED_STRING);
         putenv(OpenTelemetry::ENV_VARIABLE_BODY_SANITIZE_KEYS . '=bar');
         putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY . '=sanitize');
-        $otel = new OpenTelemetry();
-        // Default is omit, it should returns an empty string
-        $this->assertEquals($sanitizeBody, $otel->processBody($body));
+        // Sanitize strategy, it should returns the redacted body
+        $this->assertEquals($sanitizeBody, OpenTelemetry::redactBody($body));
+    }
+
+    public function testRedactBodyWithSanitizeUsingCustomKeys()
+    {
+        $body = '{"foo_bar":"supersecret","baz_foo":"test_password"}';
+        $sanitizeBody = sprintf('{"foo_bar":"%s","baz_foo":"%s"}', OpenTelemetry::REDACTED_STRING, OpenTelemetry::REDACTED_STRING);
+        putenv(OpenTelemetry::ENV_VARIABLE_BODY_SANITIZE_KEYS . '=bar,baz');
+        putenv(OpenTelemetry::ENV_VARIABLE_BODY_STRATEGY . '=sanitize');
+        // Sanitize strategy, it should returns the redacted body
+        $this->assertEquals($sanitizeBody, OpenTelemetry::redactBody($body));
+    }
+
+    public function testGetTracer()
+    {
+        $tracer = OpenTelemetry::getTracer(
+            Globals::tracerProvider()
+        );
+        $this->assertInstanceOf(TracerInterface::class, $tracer);
     }
 }
