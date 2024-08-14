@@ -36,6 +36,7 @@ use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 
 use function get_class;
@@ -50,7 +51,7 @@ use function strtolower;
 
 final class Transport implements ClientInterface, HttpAsyncClient
 {
-    const VERSION = "8.9.0";
+    const VERSION = "8.10.0";
 
     private ClientInterface $client;
     private LoggerInterface $logger;
@@ -304,7 +305,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
      * @throws NoNodeAvailableException
      * @throws ClientExceptionInterface
      */
-    public function sendRequest(RequestInterface $request, array $opts = []): ResponseInterface
+    public function sendRequest(RequestInterface $request): ResponseInterface
     {   
         if (empty($request->getUri()->getHost())) {
             $node = $this->nodePool->nextNode();
@@ -325,14 +326,18 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 $count++;
                 // OpenTelemetry span start
                 if (!empty($tracer)) {
+                    if ($request instanceof ServerRequestInterface) {
+                        $opts = $request->getAttribute(OpenTelemetry::PSR7_OTEL_ATTRIBUTE_NAME, []);
+                    }
                     $spanName = $opts['db.operation.name'] ?? $request->getUri()->getPath();
                     $span = $tracer->spanBuilder($spanName)->startSpan();
                     $span->setAttribute('http.request.method', $request->getMethod());
                     $span->setAttribute('url.full', $this->getFullUrl($request));
                     $span->setAttribute('server.address', $request->getUri()->getHost());
                     $span->setAttribute('server.port', $request->getUri()->getPort());
-                    // @phpstan-ignore argument.type
-                    $span->setAttributes($opts);
+                    if (!empty($opts)) {
+                        $span->setAttributes($opts);
+                    }
                 }
                 $response = $this->client->sendRequest($request);
 

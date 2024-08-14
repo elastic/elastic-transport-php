@@ -583,7 +583,7 @@ final class TransportTest extends TestCase
         $this->assertEquals(9200, $attributes->get('server.port'));
     }
 
-    public function testSendRequestWithOpenTelemetryAndOptions()
+    public function testSendRequestWithOpenTelemetryAndAttributes()
     {
         putenv(OpenTelemetry::ENV_VARIABLE_ENABLED.'=true');
 
@@ -595,7 +595,11 @@ final class TransportTest extends TestCase
         $this->nodePool->method('nextNode')
             ->willReturn($this->node);
 
-        $request = $this->requestFactory->createRequest('GET', '/');
+        $options = [
+            'foo' => 'bar'
+        ];
+        $request = $this->requestFactory->createServerRequest('GET', '/');
+        $request = $request->withAttribute(OpenTelemetry::PSR7_OTEL_ATTRIBUTE_NAME, $options);
         $this->transport = new Transport($this->client, $this->nodePool, $this->logger);
 
         // OpenTelemetry tracer
@@ -607,10 +611,8 @@ final class TransportTest extends TestCase
                 )
             )
         );
-        $options = [
-            'foo' => 'bar'
-        ];
-        $response = $this->transport->sendRequest($request, $options);
+
+        $response = $this->transport->sendRequest($request);
         $spans = $inMemory->getSpans();
         
         $this->assertIsArray($spans);

@@ -22,6 +22,7 @@ use OpenTelemetry\API\Trace\TracerProviderInterface;
 class OpenTelemetry
 {
     const OTEL_TRACER_NAME = 'elasticsearch-api';
+    const PSR7_OTEL_ATTRIBUTE_NAME = 'otel-elastic-transport';
     // Valid values for the enabled config are 'true' and 'false'
     const ENV_VARIABLE_ENABLED = 'OTEL_PHP_INSTRUMENTATION_ELASTICSEARCH_ENABLED';
     /**
