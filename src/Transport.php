@@ -59,8 +59,8 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private array $headers = [];
     private string $user;
     private string $password;
-    private RequestInterface $lastRequest;
-    private ResponseInterface $lastResponse;
+    private ?RequestInterface $lastRequest = null;
+    private ?ResponseInterface $lastResponse = null;
     private string $OSVersion;
     private int $retries = 0;
     private HttpAsyncClient $asyncClient;
@@ -190,12 +190,12 @@ final class Transport implements ClientInterface, HttpAsyncClient
         return str_replace(['alpha', 'beta', 'snapshot', 'rc', 'pre'], 'p', strtolower($version)); 
     }
 
-    public function getLastRequest(): RequestInterface
+    public function getLastRequest(): ?RequestInterface
     {
         return $this->lastRequest;
     }
 
-    public function getLastResponse(): ResponseInterface
+    public function getLastResponse(): ?ResponseInterface
     {
         return $this->lastResponse;
     }
