@@ -319,7 +319,8 @@ final class Transport implements ClientInterface, HttpAsyncClient
         if (getenv(OpenTelemetry::ENV_VARIABLE_ENABLED)) {
             $tracer = $this->getOTelTracer();
         }
-        
+
+        $lastNetworkException = null;
         $count = -1;
         while ($count < $this->getRetries()) {
             try {
@@ -346,6 +347,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
 
                 return $response;
             } catch (NetworkExceptionInterface $e) {
+                $lastNetworkException = $e;
                 $this->logger->error(sprintf("Retry %d: %s", $count, $e->getMessage()));
                 if (!empty($span)) {
                     $span->setAttribute('error.type', $e->getMessage());
@@ -370,7 +372,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
         }
         $exceededMsg = sprintf("Exceeded maximum number of retries (%d)", $this->getRetries());
         $this->logger->error($exceededMsg);
-        throw new NoNodeAvailableException($exceededMsg);
+        throw new NoNodeAvailableException($exceededMsg, 0, $lastNetworkException);
     }
 
     public function setAsyncClient(HttpAsyncClient $asyncClient): self
