@@ -56,6 +56,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private ClientInterface $client;
     private LoggerInterface $logger;
     private NodePoolInterface $nodePool;
+    /**
+     * @var array<mixed>
+     */
     private array $headers = [];
     private string $user;
     private string $password;
@@ -132,6 +135,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
         return $this->retries;
     }
 
+    /**
+     * @return array<mixed>
+     */
     public function getHeaders(): array
     {
         return $this->headers;
@@ -507,6 +513,8 @@ final class Transport implements ClientInterface, HttpAsyncClient
      * Here a list of supported libraries:
      * gu => guzzlehttp/guzzle
      * sy => symfony/http-client
+     * 
+     * @return array<mixed>
      */
     private function getClientLibraryInfo(): array
     {

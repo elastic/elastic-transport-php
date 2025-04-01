@@ -31,6 +31,9 @@ class TransportBuilder
     protected ClientInterface $client;
     protected NodePoolInterface $nodePool;
     protected LoggerInterface $logger;
+    /**
+     * @var array<string>
+     */
     protected array $hosts = [];
     protected TracerInterface $OTelTracer;
 
@@ -88,12 +91,18 @@ class TransportBuilder
         return $this->logger;
     }
 
+    /**
+     * @param array<string> $hosts
+     */
     public function setHosts(array $hosts): self
     {
         $this->hosts = $hosts;
         return $this;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getHosts(): array
     {
         return $this->hosts;

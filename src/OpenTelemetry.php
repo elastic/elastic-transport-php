@@ -96,6 +96,9 @@ class OpenTelemetry
         );
     }
 
+    /**
+     * @param array<mixed> $sanitizeKeys
+     */
     private static function sanitizeBody(string $body, array $sanitizeKeys): string
     {
         if (empty($body)) {
