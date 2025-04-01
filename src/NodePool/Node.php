@@ -52,7 +52,7 @@ class Node
         return $this->uri;
     }
 
-    public function getLastPing(): int|null
+    public function getLastPing(): ?int
     {
         return $this->lastPing;
     }
