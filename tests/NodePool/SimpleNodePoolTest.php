@@ -59,6 +59,11 @@ final class SimpleNodePoolTest extends TestCase
         $this->nodePool->setHosts($hosts);
     }
 
+    /**
+     * Remember that the order of the nodes is randomized
+     * using shuffle() in SimpleNodePool
+     * 
+     */
     public function testNextNodeWithRoundRobinAndNoResurrect()
     {
         $hosts = [
@@ -74,12 +79,11 @@ final class SimpleNodePoolTest extends TestCase
         $node1 = $this->nodePool->nextNode();
         $this->assertInstanceOf(Node::class, $node1);
         $host1 = $node1->getUri()->getHost();
-        $this->assertEquals($hosts[1], $host1);
 
         $node2 = $this->nodePool->nextNode();
         $this->assertInstanceOf(Node::class, $node2);
         $host2 = $node2->getUri()->getHost();
-        $this->assertEquals($hosts[0], $host2);
+        $this->assertNotEquals($host1, $host2);
 
         $node3 = $this->nodePool->nextNode();
         $this->assertInstanceOf(Node::class, $node3);
