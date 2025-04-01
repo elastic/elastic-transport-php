@@ -272,6 +272,8 @@ final class Transport implements ClientInterface, HttpAsyncClient
             json_encode($message->getHeaders()),
             (string) $message->getBody()
         ));
+
+        $message->getBody()->rewind();
     }
 
     private function logRequest(string $title, RequestInterface $request): void
