@@ -1,5 +1,16 @@
 # Changelog
 
+## 8.11.0 (2025-04-02)
+
+- Added Node::getLastPing and Node::getFailedPings for custom NodePool implementations with ping backoffs
+  [#35](https://github.com/elastic/elastic-transport-php/pull/35)
+- Add HTTP network exception as previous exception to NoNodeAvailableException for debugging
+  [#34](https://github.com/elastic/elastic-transport-php/pull/34)
+- Fixed PHP 7.4+ issue - "must not be accessed before initialization" in getLastRequest() & getLastResponse()
+  [#33](https://github.com/elastic/elastic-transport-php/pull/33)
+- Fixed missing response body with guzzle psr7 streams
+  [#30](https://github.com/elastic/elastic-transport-php/pull/30)
+
 ## 8.10.0 (2024-08-14)
 
 - Added the OpenTelemetry support
