@@ -4,10 +4,10 @@
  *
  * @link      https://github.com/elastic/elastic-transport-php
  * @copyright Copyright (c) Elasticsearch B.V (https://www.elastic.co)
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @license   https://opensource.org/licenses/MIT MIT License
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * Elasticsearch B.V licenses this file to you under the MIT License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);
@@ -37,6 +37,9 @@ class JsonSerializer implements SerializerInterface
         if (empty($data)) {
             return '{}';
         }
+        if (is_string($data)) {
+            return $data;
+        }
         try {
             $removeNull = $options['remove_null'] ?? true;
             if ($removeNull) {
@@ -56,7 +59,7 @@ class JsonSerializer implements SerializerInterface
      * 'type' => (string) specify if the output should be an array
      *           or an object (default is array)
      * 
-     * @return array|object
+     * @inheritdoc
      */
     public static function unserialize(string $data, array $options = [])
     {

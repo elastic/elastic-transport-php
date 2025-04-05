@@ -4,89 +4,73 @@
  *
  * @link      https://github.com/elastic/elastic-transport-php
  * @copyright Copyright (c) Elasticsearch B.V (https://www.elastic.co)
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @license   https://opensource.org/licenses/MIT MIT License
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * Elasticsearch B.V licenses this file to you under the MIT License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);
 
 namespace Elastic\Transport\Test\Resurrect;
 
-use Elastic\Transport\ConnectionPool\Connection;
-use Elastic\Transport\ConnectionPool\Resurrect\ElasticsearchResurrect;
-use GuzzleHttp\Client;
-use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Psr7\Uri;
+use Elastic\Transport\NodePool\Node;
+use Elastic\Transport\NodePool\Resurrect\ElasticsearchResurrect;
+use Exception;
+use Http\Discovery\Psr18ClientDiscovery;
+use Http\Discovery\Strategy\MockClientStrategy;
+use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\ResponseInterface;
 
 final class ElasticsearchResurrectTest extends TestCase
 {
-    /**
-     * @var MockHandler
-     */
-    private $mock;
-
-    /**
-     * @var HandlerStack
-     */
-    private $handlerStack;
-
-    /**
-     * @var Client
-     */
-    private $client;
-
-    /**
-     * @var Connection
-     */
-    private $connection;
+    private ClientInterface $client;
+    private ElasticsearchResurrect $resurrect;
+    private Node $node;
 
     public function setUp(): void
     {
-        $this->mock = new MockHandler();
-        $this->handlerStack = HandlerStack::create($this->mock);
-        $this->client = new Client(['handler' => $this->handlerStack]);
+        $this->node = $this->createMock(Node::class);
 
-        $this->connection = $this->createStub(Connection::class);
+        Psr18ClientDiscovery::prependStrategy(MockClientStrategy::class);
+        $this->resurrect = new ElasticsearchResurrect();
+        $this->client = $this->resurrect->getClient();
+    }
+
+    public function testGetClient()
+    {
+        $this->assertInstanceOf(ClientInterface::class, $this->resurrect->getClient());
     }
 
     public function testPingIsTrue()
     {
-        $expectedResponse = new Response(200);
-        $this->mock->append($expectedResponse);
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getStatusCode')
+            ->willReturn(200);
 
-        $resurrect = new ElasticsearchResurrect($this->client);
-        $this->assertTrue($resurrect->ping($this->connection));
+        $this->client->addResponse($response);
+
+        $this->assertTrue($this->resurrect->ping($this->node));
     }
 
     public function testPingIsFalse()
     {
-        $expectedResponse = new Response(500);
-        $this->mock->append($expectedResponse);
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getStatusCode')
+            ->willReturn(500);
 
-        $resurrect = new ElasticsearchResurrect($this->client);
-        $this->assertFalse($resurrect->ping($this->connection));
+        $this->client->addResponse($response);
+
+        $this->assertFalse($this->resurrect->ping($this->node));
     }
 
     public function testPingIsFalseOnConnectionError()
     {
-        $uri = new Uri('localhost');
-        $this->connection->method('getUri')
-            ->willReturn($uri);
+        $exception = new Exception('Connection error');
+        $this->client->addException($exception);
 
-        $this->mock->append(
-            new RequestException('Error Communicating with Server', new Request('HEAD', 'test'))
-        );
-        $resurrect = new ElasticsearchResurrect($this->client);
-
-        $this->assertFalse($resurrect->ping($this->connection));
+        $this->assertFalse($this->resurrect->ping($this->node));
     }
 }

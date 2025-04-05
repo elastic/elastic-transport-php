@@ -4,10 +4,10 @@
  *
  * @link      https://github.com/elastic/elastic-transport-php
  * @copyright Copyright (c) Elasticsearch B.V (https://www.elastic.co)
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @license   https://opensource.org/licenses/MIT MIT License
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * Elasticsearch B.V licenses this file to you under the MIT License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);
@@ -17,7 +17,6 @@ namespace Elastic\Transport\Serializer;
 use Elastic\Transport\Exception\InvalidXmlException;
 use SimpleXMLElement;
 
-use function implode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
 use function serialize;
@@ -29,7 +28,8 @@ class XmlSerializer implements SerializerInterface
     public static function serialize($data, array $options = []): string
     {
         if ($data instanceof SimpleXMLElement) {
-            return $data->asXML();
+            $xml = $data->asXML();
+            return false === $xml ? '' : $xml;
         }
         throw new InvalidXmlException(sprintf(
             "Not a valid SimpleXMLElement: %s", 
@@ -48,7 +48,7 @@ class XmlSerializer implements SerializerInterface
             libxml_clear_errors();
             throw new InvalidXmlException(sprintf(
                 "Not a valid XML: %s", 
-                implode(',', $errors)
+                serialize($errors)
             ));
         }
         return $result;

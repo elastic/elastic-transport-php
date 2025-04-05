@@ -4,69 +4,65 @@
  *
  * @link      https://github.com/elastic/elastic-transport-php
  * @copyright Copyright (c) Elasticsearch B.V (https://www.elastic.co)
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @license   https://opensource.org/licenses/MIT MIT License
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * Elasticsearch B.V licenses this file to you under the MIT License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);
 
-namespace Elastic\Transport\Test;
+namespace Elastic\Transport\Test\Transport;
 
-use Elastic\Transport\ConnectionPool\SimpleConnectionPool;
+use Elastic\Transport\NodePool\Resurrect\NoResurrect;
+use Elastic\Transport\NodePool\Selector\RoundRobin;
+use Elastic\Transport\NodePool\SimpleNodePool;
 use Elastic\Transport\Transport;
-use GuzzleHttp\Client;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response;
+use Http\Discovery\Psr17FactoryDiscovery;
+use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
-use Psr\Log\Test\TestLogger;
-
-final class TransportithSimpleConnectionPoolTest extends TestCase
+final class SimpleNodePool_RoundRobin_NoResurrectTest extends TestCase
 {
-    private $mock;
-    private $handlerStack;
     private $client;
-    private $connection;
-    private $connectionPool;
+
+    private $nodePool;
     private $logger;
     private $transport;
 
     public function setUp(): void
     {
-        $this->mock = new MockHandler();
-        $this->handlerStack = HandlerStack::create($this->mock);
-        $this->client = new Client(['handler' => $this->handlerStack]);
+        $this->client = new Client();
+        $this->nodePool = new SimpleNodePool(
+            new RoundRobin(),
+            new NoResurrect()
+        );
+        $this->logger = new NullLogger();
+        $this->transport = new Transport($this->client, $this->nodePool, $this->logger);
 
-        $this->connectionPool = new SimpleConnectionPool();
-
-        $this->logger = new TestLogger();
-        $this->transport = new Transport($this->client, $this->connectionPool, $this->logger);
+        $this->requestFactory = Psr17FactoryDiscovery::findRequestFactory();
+        $this->responseFactory = Psr17FactoryDiscovery::findResponseFactory();
     }
 
 
-    public function testSendRequestWithDefaultSimpleConnectionPoolParams()
+    public function testSendRequest()
     {
         $hosts = [
             '192.168.0.1:9200',
             '192.168.0.2:9200'
         ];
-        $this->connectionPool->setHosts($hosts);
+        $this->nodePool->setHosts($hosts);
 
-        $expectedResponse = new Response(200);
-        $this->mock->append(
-            $expectedResponse,
-            $expectedResponse
-        );
+        $expectedResponse = $this->responseFactory->createResponse(200);
+        $this->client->addResponse($expectedResponse);
+        $this->client->addResponse($expectedResponse);
 
-        $request = new Request('GET', '/');
+        $request = $this->requestFactory->createRequest('GET', '/');
         $response = $this->transport->sendRequest($request);
         $this->assertEquals(200, $response->getStatusCode());
 
-        // Check if the behaviour is Round-robin (default Selector of SimpleConnectionPool)
+        // Check if the behaviour is Round-robin
         $host1 = $this->transport->getLastRequest()->getUri()->getHost();
         $port1 = $this->transport->getLastRequest()->getUri()->getPort();
         $url1 = sprintf("%s:%s", $host1, $port1);

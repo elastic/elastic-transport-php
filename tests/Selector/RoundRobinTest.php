@@ -4,19 +4,19 @@
  *
  * @link      https://github.com/elastic/elastic-transport-php
  * @copyright Copyright (c) Elasticsearch B.V (https://www.elastic.co)
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @license   https://opensource.org/licenses/MIT MIT License
  *
  * Licensed to Elasticsearch B.V under one or more agreements.
- * Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+ * Elasticsearch B.V licenses this file to you under the MIT License.
  * See the LICENSE file in the project root for more information.
  */
 declare(strict_types=1);
 
 namespace Elastic\Transport\Test\Selector;
 
-use Elastic\Transport\ConnectionPool\Connection;
-use Elastic\Transport\ConnectionPool\Selector\RoundRobin;
-use Elastic\Transport\Exception\NoConnectionAvailableException;
+use Elastic\Transport\NodePool\Node;
+use Elastic\Transport\NodePool\Selector\RoundRobin;
+use Elastic\Transport\Exception\NoNodeAvailableException;
 use PHPUnit\Framework\TestCase;
 
 final class RoundRobinTest extends TestCase
@@ -27,67 +27,70 @@ final class RoundRobinTest extends TestCase
     private $selector;
 
     /**
-     * @var Connection
+     * @var Node
      */
-    private $connection;
+    private $node;
 
     public function setUp(): void
     {
         $this->selector = new RoundRobin();
-        $this->connection = $this->createStub(Connection::class);
+        $this->node = $this->createStub(Node::class);
     }
 
     /**
      * @doesNotPerformAssertions
      */
-    public function testSetConnections()
+    public function testSetNodes()
     {
-        $connections = [ $this->connection ];
-        $this->selector->setConnections($connections);
+        $this->selector->setNodes([$this->node]);
     }
 
     /**
      * @doesNotPerformAssertions
      */
-    public function testSetEmptyConnections()
+    public function testSetEmptyNodes()
     {
-        $connections = [];
-        $this->selector->setConnections($connections);
+        $this->selector->setNodes([]);
     }
 
-    public function testNextConnectionWithEmptyConnectionsThrowException()
+    public function testGetNodes()
     {
-        $this->expectException(NoConnectionAvailableException::class);
-        $connection = $this->selector->nextConnection();
+        $this->assertIsArray($this->selector->getNodes());
     }
 
-    public function testNextConnectionWithOneConnection()
+    public function testNextNodeWithEmptyNodesThrowException()
     {
-        $connections = [ $this->connection ];
-        $this->selector->setConnections($connections);
-        $connection = $this->selector->nextConnection();
-        $this->assertEquals($connections[0], $connection);
-
-        $connection = $this->selector->nextConnection();
-        $this->assertEquals($connections[0], $connection);
+        $this->expectException(NoNodeAvailableException::class);
+        $connection = $this->selector->nextNode();
     }
 
-    public function testNextConnectionWithTwoConnections()
+    public function testNextNodeWithOneNode()
     {
-        $connection2 = $this->createStub(Connection::class);
-        $connections = [ $this->connection, $connection2 ];
-        $this->selector->setConnections($connections);
+        $nodes = [ $this->node ];
+        $this->selector->setNodes($nodes);
+        $node = $this->selector->nextNode();
+        $this->assertEquals($nodes[0], $node);
 
-        $connection = $this->selector->nextConnection();
-        $this->assertEquals($connections[0], $connection);
+        $node = $this->selector->nextNode();
+        $this->assertEquals($nodes[0], $node);
+    }
 
-        $connection = $this->selector->nextConnection();
-        $this->assertEquals($connections[1], $connection);
+    public function testNextNodeWithTwoNodes()
+    {
+        $node2 = $this->createStub(Node::class);
+        $nodes = [ $this->node, $node2 ];
+        $this->selector->setNodes($nodes);
 
-        $connection = $this->selector->nextConnection();
-        $this->assertEquals($connections[0], $connection);
+        $node = $this->selector->nextNode();
+        $this->assertEquals($nodes[0], $node);
 
-        $connection = $this->selector->nextConnection();
-        $this->assertEquals($connections[1], $connection);
+        $node = $this->selector->nextNode();
+        $this->assertEquals($nodes[1], $node);
+
+        $node = $this->selector->nextNode();
+        $this->assertEquals($nodes[0], $node);
+
+        $node = $this->selector->nextNode();
+        $this->assertEquals($nodes[1], $node);
     }
 }
