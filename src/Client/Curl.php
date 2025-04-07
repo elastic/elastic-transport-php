@@ -154,7 +154,7 @@ class Curl implements ClientInterface
      *      status-code: int, // The status code of the response (e.g. 200)
      *      reason-phrase: string, // The reason-phrase (e.g. OK)
      *      headers: array<mixed>, // The HTTP headers
-     *      body: string // The body content (can be empty)
+     *      body: string, // The body content (can be empty)
      * }
      */
     private function parseResponse(string $response): array
