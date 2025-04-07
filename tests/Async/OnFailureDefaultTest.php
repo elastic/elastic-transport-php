@@ -17,11 +17,15 @@ namespace Elastic\Transport\Test\Async;
 use Elastic\Transport\Async\OnFailureDefault;
 use Elastic\Transport\Async\OnFailureInterface;
 use Exception;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
 final class OnFailureDefaultTest extends TestCase
 {
+    private OnFailureInterface $onFailure;
+    private MockObject|RequestInterface $request;
+
     public function setUp(): void
     {
         $this->onFailure = new OnFailureDefault();

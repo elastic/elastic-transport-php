@@ -20,17 +20,17 @@ use Elastic\Transport\Transport;
 use Elastic\Transport\TransportBuilder;
 use Http\Discovery\Psr18ClientDiscovery;
 use Http\Discovery\Strategy\MockClientStrategy;
+use PHPUnit\Framework\MockObject\Stub;
 use Psr\Http\Client\ClientInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Psr\Log\Test\TestLogger;
 
 final class TransportBuilderTest extends TestCase
 {
-    private $client;
-    private $connectionPool;
-    private $logger;
-    private $builder;
+    private Stub|ClientInterface $client;
+    private Stub|NodePoolInterface $nodePool;
+    private Stub|LoggerInterface $logger;
+    private TransportBuilder $builder;
 
     public function setUp(): void
     {

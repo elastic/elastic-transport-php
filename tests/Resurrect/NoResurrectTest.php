@@ -16,11 +16,12 @@ namespace Elastic\Transport\Test\Resurrect;
 
 use Elastic\Transport\NodePool\Resurrect\NoResurrect;
 use Elastic\Transport\NodePool\Node;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 final class NoResurrectTest extends TestCase
 {
-    private Node $node;
+    private Stub|Node $node;
 
     public function setUp(): void
     {

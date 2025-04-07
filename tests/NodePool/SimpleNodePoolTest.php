@@ -19,21 +19,19 @@ use Elastic\Transport\NodePool\Selector\SelectorInterface;
 use Elastic\Transport\NodePool\SimpleNodePool;
 use Elastic\Transport\Exception\NoNodeAvailableException;
 use Elastic\Transport\NodePool\Node;
+use Elastic\Transport\NodePool\NodePoolInterface;
 use Elastic\Transport\NodePool\Resurrect\NoResurrect;
 use Elastic\Transport\NodePool\Selector\RoundRobin;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 final class SimpleNodePoolTest extends TestCase
 {
-    /**
-     * @var SelectorInterface
-     */
-    private $selector;
+    private Stub|SelectorInterface $selector;
 
-    /**
-     * @var ResurrectInterface
-     */
-    private $resurrect;
+    private Stub|ResurrectInterface $resurrect;
+
+    private NodePoolInterface $nodePool;
 
     public function setUp(): void
     {

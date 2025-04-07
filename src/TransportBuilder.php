@@ -14,11 +14,13 @@ declare(strict_types=1);
 
 namespace Elastic\Transport;
 
+use Elastic\Transport\Client\Curl;
 use Elastic\Transport\NodePool\NodePoolInterface;
 use Elastic\Transport\NodePool\SimpleNodePool;
 use Elastic\Transport\Exception;
 use Elastic\Transport\NodePool\Resurrect\NoResurrect;
 use Elastic\Transport\NodePool\Selector\RoundRobin;
+use Http\Discovery\Exception\NotFoundException;
 use Http\Discovery\Psr18ClientDiscovery;
 use OpenTelemetry\API\Trace\TracerInterface;
 use Psr\Http\Client\ClientInterface;
@@ -55,7 +57,11 @@ class TransportBuilder
     public function getClient(): ClientInterface
     {
         if (empty($this->client)) {
-            $this->client = Psr18ClientDiscovery::find();
+            try {
+                $this->client = Psr18ClientDiscovery::find();
+            } catch (NotFoundException $e) {
+                $this->client = new Curl();
+            }
         }
         return $this->client;
     }
@@ -125,19 +131,24 @@ class TransportBuilder
 
     /**
      * Return the URL of Elastic Cloud from the Cloud ID
+     * 
+     * @throws Exception\CloudIdParseException
      */
     private function parseElasticCloudId(string $cloudId): string
     {
-        try {
-            list($name, $encoded) = explode(':', $cloudId);
-            list($uri, $uuids)    = explode('$', base64_decode($encoded));
-            list($es,)            = explode(':', $uuids);
-
-            return sprintf("https://%s.%s", $es, $uri);
-        } catch (Throwable $t) {
-            throw new Exception\CloudIdParseException(
-                'Cloud ID not valid'
-            );
+        if (strpos($cloudId, ':') !== false) {
+            list($name, $encoded) = explode(':', $cloudId, 2);
+            $base64 = base64_decode($encoded);
+            if (strpos($base64, '$') !== false) {
+                list($uri, $uuids) = explode('$', $base64, 2);
+                if (strpos($uuids, ':') !== false) {
+                    list($es,) = explode(':', $uuids);
+                    return sprintf("https://%s.%s", $es, $uri);
+                }
+            }
         }
+        throw new Exception\CloudIdParseException(
+            'Cloud ID not valid'
+        );
     }
 }

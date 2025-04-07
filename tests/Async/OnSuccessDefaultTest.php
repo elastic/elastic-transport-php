@@ -16,11 +16,15 @@ namespace Elastic\Transport\Test\Async;
 
 use Elastic\Transport\Async\OnSuccessDefault;
 use Elastic\Transport\Async\OnSuccessInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
 final class OnSuccessDefaultTest extends TestCase
 {
+    private OnSuccessInterface $onSuccess;
+    private MockObject|ResponseInterface $response;
+    
     public function setUp(): void
     {
         $this->onSuccess = new OnSuccessDefault();

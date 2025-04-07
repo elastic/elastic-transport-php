@@ -22,6 +22,7 @@ use Http\Client\Exception\TransferException;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Mock\Client;
 use Http\Promise\Promise;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
@@ -32,10 +33,10 @@ use Psr\Log\LoggerInterface;
 final class TransportWithRetriesTest extends TestCase
 {
     private ClientInterface $client;
-    private NodePoolInterface $nodePool;
+    private Stub|NodePoolInterface $nodePool;
     private LoggerInterface $logger;
     private Transport $transport;
-
+    private Stub $node;
     private RequestFactoryInterface $requestFactory;
     private ResponseFactoryInterface $responseFactory;
 
