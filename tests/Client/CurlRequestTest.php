@@ -41,8 +41,13 @@ final class CurlRequestTest extends TestCase
         sleep(1);
     }
 
-
-
+    public static function tearDownAfterClass(): void
+    {
+        if (self::$pid > 0) {
+            exec(sprintf("kill %s", self::$pid));
+        }
+    }
+    
     public function setUp(): void
     {
         $this->curl = new Curl();
@@ -98,12 +103,5 @@ final class CurlRequestTest extends TestCase
             $this->assertEquals($v, $httpRequest['headers'][$k]);
         }
         $this->assertEquals($body, $httpRequest['body']);
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        if (self::$pid > 0) {
-            exec(sprintf("kill %s", self::$pid));
-        }
     }
 }

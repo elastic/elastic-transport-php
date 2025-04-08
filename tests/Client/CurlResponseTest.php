@@ -41,7 +41,12 @@ final class CurlResponseTest extends TestCase
         sleep(1);
     }
 
-
+    public static function tearDownAfterClass(): void
+    {
+        if (self::$pid > 0) {
+            exec(sprintf("kill %s", self::$pid));
+        }
+    }
 
     public function setUp(): void
     {
@@ -119,13 +124,6 @@ final class CurlResponseTest extends TestCase
             foreach ($values as $val) {
                 $this->assertTrue(in_array($val, $responseHeaders[$k]));
             }
-        }
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        if (self::$pid > 0) {
-            exec(sprintf("kill %s", self::$pid));
         }
     }
 }

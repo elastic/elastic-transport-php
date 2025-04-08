@@ -414,7 +414,7 @@ final class TransportTest extends TestCase
         $this->transport->setElasticMetaHeader('es', '7.11.0');
         $this->transport->sendRequest($request);
 
-        $meta = $this->transport->getLastRequest()->getHeader('x-elastic-client-meta')[0] ?? null;
+        $meta = $this->transport->getLastRequest()->getHeader(Transport::ELASTIC_META_HEADER)[0] ?? null;
         $this->assertMatchesRegularExpression('/^[a-z]{1,}=[a-z0-9\.\-]{1,}(?:,[a-z]{1,}=[a-z0-9\.\-]+)*$/', $meta);
     }
 
@@ -427,7 +427,7 @@ final class TransportTest extends TestCase
         $this->transport->setElasticMetaHeader('es', '7.11.0-snapshot');
         $this->transport->sendRequest($request);
 
-        $meta = $this->transport->getLastRequest()->getHeader('x-elastic-client-meta')[0] ?? null;
+        $meta = $this->transport->getLastRequest()->getHeader(Transport::ELASTIC_META_HEADER)[0] ?? null;
         $this->assertStringContainsString('es=7.11.0-p', $meta);
     }
 
