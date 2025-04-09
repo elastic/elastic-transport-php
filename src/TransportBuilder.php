@@ -138,17 +138,15 @@ class TransportBuilder
     {
         if (strpos($cloudId, ':') !== false) {
             list($name, $encoded) = explode(':', $cloudId, 2);
-            $base64 = base64_decode($encoded);
-            if (strpos($base64, '$') !== false) {
-                list($uri, $uuids) = explode('$', $base64, 2);
-                if (strpos($uuids, ':') !== false) {
-                    list($es,) = explode(':', $uuids);
-                    return sprintf("https://%s.%s", $es, $uri);
-                }
+            $base64 = base64_decode($encoded, true);
+            if ($base64 !== false && strpos($base64, '$') !== false) {
+                list($uri, $uuids) = explode('$', $base64);
+                return sprintf("https://%s.%s", $uuids, $uri);
             }
         }
-        throw new Exception\CloudIdParseException(
-            'Cloud ID not valid'
-        );
+        throw new Exception\CloudIdParseException(sprintf(
+            'Cloud ID %s is not valid', 
+            $name ?? ''
+        ));
     }
 }

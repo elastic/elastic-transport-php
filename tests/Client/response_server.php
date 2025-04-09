@@ -1,6 +1,6 @@
 <?php
 /**
- * Take the HTTP request and build the desiderata response
+ * Take the HTTP request and build the desired response
  * Send a JSON request with the following structure:
  * {
  *      "response_code": 200,

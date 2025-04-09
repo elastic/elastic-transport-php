@@ -514,6 +514,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
      * Here a list of supported libraries:
      * gu => guzzlehttp/guzzle
      * sy => symfony/http-client
+     * ec => elastic curl client (Elastic\Transport\Client\Curl)
      * 
      * @return array<mixed>
      */
