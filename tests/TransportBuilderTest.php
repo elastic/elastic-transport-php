@@ -20,17 +20,17 @@ use Elastic\Transport\Transport;
 use Elastic\Transport\TransportBuilder;
 use Http\Discovery\Psr18ClientDiscovery;
 use Http\Discovery\Strategy\MockClientStrategy;
+use PHPUnit\Framework\MockObject\Stub;
 use Psr\Http\Client\ClientInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Psr\Log\Test\TestLogger;
 
 final class TransportBuilderTest extends TestCase
 {
-    private $client;
-    private $connectionPool;
-    private $logger;
-    private $builder;
+    private Stub|ClientInterface $client;
+    private Stub|NodePoolInterface $nodePool;
+    private Stub|LoggerInterface $logger;
+    private TransportBuilder $builder;
 
     public function setUp(): void
     {
@@ -110,21 +110,32 @@ final class TransportBuilderTest extends TestCase
         $this->assertEquals($hosts, $this->builder->getHosts());
     }
 
-    public function testSetInvalidCloudId()
+    /**
+     * Returns examples of Elasitc CloudId
+     */
+    public static function getCloudIds(): array
     {
-        $this->expectException(CloudIdParseException::class);
-        $this->builder->setCloudId('xxx');
+        return [
+            ['xxx', '', true],
+            ['cluster:d2VzdGV1cm9wZS5henVyZS5lbGFzdGljLWNsb3VkLmNvbTo5MjQzJGM2NjM3ZjMxMmM1MjQzY2RhN2RlZDZlOTllM2QyYzE5JA==', 'https://c6637f312c5243cda7ded6e99e3d2c19.westeurope.azure.elastic-cloud.com:9243', false],
+            ['cluster:d2VzdGV1cm9wZS5henVyZS5lbGFzdGljLWNsb3VkLmNvbSRlN2RlOWYxMzQ1ZTQ0OTAyODNkOTAzYmU1YjZmOTE5ZSQ=', 'https://e7de9f1345e4490283d903be5b6f919e.westeurope.azure.elastic-cloud.com', false],
+            ['cluster:d2VzdGV1cm9wZS5henVyZS5lbGFzdGljLWNsb3VkLmNvbSQ4YWY3ZWUzNTQyMGY0NThlOTAzMDI2YjQwNjQwODFmMiQyMDA2MTU1NmM1NDA0OTg2YmZmOTU3ZDg0YTZlYjUxZg==', 'https://8af7ee35420f458e903026b4064081f2.westeurope.azure.elastic-cloud.com', false]
+        ];
     }
 
-    public function testSetValidCloudId()
+    /**
+     * @dataProvider getCloudIds
+     */
+    public function testSetCloudId(string $cloudId, string $expected, bool $exception)
     {
-        $result = $this->builder->setCloudId(sprintf(
-            "xxx:%s", 
-            base64_encode('aaa$cloud.elastic.co:1234567890')
-        ));
-
-        $this->assertInstanceOf(TransportBuilder::class, $result);
-        $this->assertContains('https://cloud.elastic.co.aaa', $this->builder->getHosts());
+        if ($exception) {
+            $this->expectException(CloudIdParseException::class);
+        }
+        $result = $this->builder->setCloudId($cloudId);
+        if (!$exception) {
+            $this->assertInstanceOf(TransportBuilder::class, $result);
+            $this->assertEquals($expected, $this->builder->getHosts()[0]);
+        }
     }
 
     public function testBuildWithDefault()

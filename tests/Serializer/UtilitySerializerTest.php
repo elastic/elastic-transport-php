@@ -20,7 +20,7 @@ use stdClass;
 
 final class UtilitySerializerTest extends TestCase
 {
-    public function getTestCaseWithArray()
+    public static function getTestCaseWithArray()
     {
         return [
             [ 
@@ -82,7 +82,7 @@ final class UtilitySerializerTest extends TestCase
         $this->assertEquals($after, $before);
     }
 
-    public function getTestCaseWithObject()
+    public static function getTestCaseWithObject()
     {
         $obj1 = new stdClass;
         $obj1->a = 1;
@@ -126,7 +126,7 @@ final class UtilitySerializerTest extends TestCase
         $this->assertEquals($after, $before);
     }
 
-    public function getTestCaseWithMixedValues()
+    public static function getTestCaseWithMixedValues()
     {
         $obj1 = new stdClass;
         $obj1->a = 1;

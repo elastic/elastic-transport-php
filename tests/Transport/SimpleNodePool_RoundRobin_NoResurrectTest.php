@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Elastic\Transport\Test\Transport;
 
+use Elastic\Transport\NodePool\NodePoolInterface;
 use Elastic\Transport\NodePool\Resurrect\NoResurrect;
 use Elastic\Transport\NodePool\Selector\RoundRobin;
 use Elastic\Transport\NodePool\SimpleNodePool;
@@ -21,16 +22,20 @@ use Elastic\Transport\Transport;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Log\NullLogger;
 
 final class SimpleNodePool_RoundRobin_NoResurrectTest extends TestCase
 {
-    private $client;
+    private Client $client;
 
-    private $nodePool;
-    private $logger;
-    private $transport;
-
+    private NodePoolInterface $nodePool;
+    private NullLogger $logger;
+    private Transport $transport;
+    private RequestFactoryInterface $requestFactory;
+    private ResponseFactoryInterface $responseFactory;
+    
     public function setUp(): void
     {
         $this->client = new Client();

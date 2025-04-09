@@ -51,7 +51,8 @@ use function strtolower;
 
 final class Transport implements ClientInterface, HttpAsyncClient
 {
-    const VERSION = "8.11.0";
+    const VERSION = "9.0.0";
+    const ELASTIC_META_HEADER = "x-elastic-client-meta";
 
     private ClientInterface $client;
     private LoggerInterface $logger;
@@ -184,7 +185,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
         if (!empty($lib)) {
             $meta .= sprintf(",%s=%s", $lib[0], $lib[1]);
         }
-        $this->headers['x-elastic-client-meta'] = $meta;
+        $this->headers[self::ELASTIC_META_HEADER] = $meta;
         return $this;
     }
 
@@ -513,6 +514,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
      * Here a list of supported libraries:
      * gu => guzzlehttp/guzzle
      * sy => symfony/http-client
+     * ec => elastic curl client (Elastic\Transport\Client\Curl)
      * 
      * @return array<mixed>
      */
@@ -524,6 +526,9 @@ final class Transport implements ClientInterface, HttpAsyncClient
         }
         if (false !== strpos($clientClass, 'Symfony\Component\HttpClient')) {
             return ['sy', InstalledVersions::getPrettyVersion('symfony/http-client')];
+        }
+        if (false !== strpos($clientClass, 'Elastic\Transport\Client\Curl')) {
+            return ['ec', Transport::VERSION];
         }
         return [];
     }

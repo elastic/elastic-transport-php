@@ -35,6 +35,7 @@ use OpenTelemetry\API\Globals;
 use OpenTelemetry\SDK\Trace\SpanExporter\InMemoryExporter;
 use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -48,10 +49,10 @@ use Psr\Log\LoggerInterface;
 final class TransportTest extends TestCase
 {
     private ClientInterface $client;
-    private NodePoolInterface $nodePool;
+    private Stub|NodePoolInterface $nodePool;
     private LoggerInterface $logger;
     private Transport $transport;
-
+    private Stub $node;
     private RequestFactoryInterface $requestFactory;
     private ResponseFactoryInterface $responseFactory;
     private UriFactoryInterface $uriFactory;
@@ -413,7 +414,7 @@ final class TransportTest extends TestCase
         $this->transport->setElasticMetaHeader('es', '7.11.0');
         $this->transport->sendRequest($request);
 
-        $meta = $this->transport->getLastRequest()->getHeader('x-elastic-client-meta')[0] ?? null;
+        $meta = $this->transport->getLastRequest()->getHeader(Transport::ELASTIC_META_HEADER)[0] ?? null;
         $this->assertMatchesRegularExpression('/^[a-z]{1,}=[a-z0-9\.\-]{1,}(?:,[a-z]{1,}=[a-z0-9\.\-]+)*$/', $meta);
     }
 
@@ -426,7 +427,7 @@ final class TransportTest extends TestCase
         $this->transport->setElasticMetaHeader('es', '7.11.0-snapshot');
         $this->transport->sendRequest($request);
 
-        $meta = $this->transport->getLastRequest()->getHeader('x-elastic-client-meta')[0] ?? null;
+        $meta = $this->transport->getLastRequest()->getHeader(Transport::ELASTIC_META_HEADER)[0] ?? null;
         $this->assertStringContainsString('es=7.11.0-p', $meta);
     }
 
