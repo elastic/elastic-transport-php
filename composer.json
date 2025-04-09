@@ -28,7 +28,7 @@
         "php-http/mock-client": "^1.5",
         "nyholm/psr7": "^1.8",
         "open-telemetry/sdk": "^1.0",
-        "symfony/http-client": "^7.2"
+        "symfony/http-client": "^6.0"
     },
     "autoload": {
         "psr-4": {
