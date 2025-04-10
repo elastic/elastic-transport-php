@@ -17,6 +17,25 @@ client, a [PSR-17](https://www.php-fig.org/psr/psr-17/) factory and the [HttpAsy
 interface with [Promise](https://docs.php-http.org/en/latest/components/promise.html) for
 asyncronous HTTP requestes.
 
+Starting from 9.0.0 version, if no PSR-18 clients are discovered, the library uses a
+default [custom HTTP client](src/Client/Curl.php) based on [cURL](https://curl.se/).
+This client relies on the [cURL php extension](https://www.php.net/manual/en/book.curl.php)
+that must be installed.
+Moreover, this client does **not** implement the [HttpAsyncClient](https://github.com/php-http/httplug/blob/master/src/HttpAsyncClient.php)
+ interface, which means you won't be able to send asynchronous requests.
+If you need support for asynchronous requests, consider installing a PST-18 HTTP client like
+[Guzzle](https://github.com/guzzle/guzzle):
+
+```bash
+composer require guzzlehttp/guzzle
+```
+
+or [Symfony HTTP Client](https://github.com/symfony/http-client):
+
+```bash
+composer require symfony/http-client
+```
+
 The architecture of the Transport is flexible and customizable, you can configure it 
 using a [PSR-18](https://www.php-fig.org/psr/psr-18/) client, a [PSR-3](https://www.php-fig.org/psr/psr-3/)
 logger and a custom [NodePoolInterface](src/NodePool/NodePoolInterface.php), to manage
