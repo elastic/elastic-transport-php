@@ -51,7 +51,7 @@ use function strtolower;
 
 final class Transport implements ClientInterface, HttpAsyncClient
 {
-    const VERSION = "9.0.0";
+    const VERSION = "9.0.1";
     const ELASTIC_META_HEADER = "x-elastic-client-meta";
 
     private ClientInterface $client;

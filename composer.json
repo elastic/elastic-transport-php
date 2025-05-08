@@ -20,13 +20,13 @@
         "php-http/discovery": "^1.14",
         "php-http/httplug": "^2.4",
         "composer-runtime-api": "^2.0",
-        "open-telemetry/api": "^1.0"
+        "open-telemetry/api": "^1.0",
+        "nyholm/psr7": "^1.8"
     },
     "require-dev": {
         "phpunit/phpunit": "^10",
         "phpstan/phpstan": "^2.1",
         "php-http/mock-client": "^1.5",
-        "nyholm/psr7": "^1.8",
         "open-telemetry/sdk": "^1.0",
         "symfony/http-client": "^6.0"
     },
