@@ -27,6 +27,7 @@ use function curl_setopt_array;
 use function curl_exec;
 use function curl_errno;
 use function curl_error;
+
 class Curl implements ClientInterface
 {
     const DEFAULT_CONNECTION_TIMEOUT = 0;
