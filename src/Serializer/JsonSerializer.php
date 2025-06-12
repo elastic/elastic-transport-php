@@ -48,9 +48,9 @@ class JsonSerializer implements SerializerInterface
             return json_encode($data, JSON_PRESERVE_ZERO_FRACTION + JSON_INVALID_UTF8_SUBSTITUTE + JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             throw new InvalidJsonException(sprintf(
-                "I cannot serialize to Json: %s", 
+                "Cannot serialize to JSON: %s", 
                 $e->getMessage()
-            ));
+            ), previous: $e);
         }
     }
 
@@ -71,9 +71,9 @@ class JsonSerializer implements SerializerInterface
             return json_decode($data, $type === 'array', 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             throw new InvalidJsonException(sprintf(
-                "Not a valid Json: %s", 
+                "Invalid JSON: %s", 
                 $e->getMessage()
-            ));
+            ), previous: $e);
         }
     }
 }
