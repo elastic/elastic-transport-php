@@ -519,11 +519,17 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private function getClientLibraryInfo(): array
     {
         $clientClass = get_class($this->client);
-        if (false !== strpos($clientClass, 'GuzzleHttp\Client')) {
-            return ['gu', InstalledVersions::getPrettyVersion('guzzlehttp/guzzle')]; 
-        }
-        if (false !== strpos($clientClass, 'Symfony\Component\HttpClient')) {
-            return ['sy', InstalledVersions::getPrettyVersion('symfony/http-client')];
+        try {
+            if (false !== strpos($clientClass, 'GuzzleHttp\Client')) {
+                return ['gu', InstalledVersions::getPrettyVersion('guzzlehttp/guzzle')];
+            }
+            if (false !== strpos($clientClass, 'Symfony\Component\HttpClient')) {
+                return ['sy', InstalledVersions::getPrettyVersion('symfony/http-client')];
+            }
+        } catch (\OutOfBoundsException $e) {
+            // In WordPress multi-plugin environments, InstalledVersions may return
+            // incorrect data from another plugin's autoloader. Return empty to omit version.
+            return [];
         }
         return [];
     }
