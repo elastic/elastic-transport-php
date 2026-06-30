@@ -57,7 +57,7 @@ class CsvSerializer implements SerializerInterface
     {
         $result = [];
         foreach (explode("\n", $data) as $row) {
-            $result[] = str_getcsv($row);
+            $result[] = str_getcsv(string:$row, escape:"\\");
         }
         return $result;
     }
