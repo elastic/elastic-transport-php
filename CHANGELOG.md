@@ -1,5 +1,10 @@
 # Changelog
 
+## 8.11.1 (2026-10-22)
+
+- Fix deprecation about str_getcsv() escape parameter
+  [#44](https://github.com/elastic/elastic-transport-php/pull/44)
+
 ## 8.11.0 (2025-04-02)
 
 - Added Node::getLastPing and Node::getFailedPings for custom NodePool implementations with ping backoffs
