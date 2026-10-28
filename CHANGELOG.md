@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Fixed the `Curl` client returning the interim `100 Continue` response instead of the final response
+  (requests with a body over 1 MB failed with `UnknownContentTypeException`), and truncating response
+  bodies that contain CRLF
+  [#48](https://github.com/elastic/elastic-transport-php/pull/48)
+
 ## 8.11.0 (2025-04-02)
 
 - Added Node::getLastPing and Node::getFailedPings for custom NodePool implementations with ping backoffs

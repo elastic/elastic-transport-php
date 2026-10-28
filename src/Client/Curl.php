@@ -160,7 +160,7 @@ class Curl implements ClientInterface
      */
     private function parseResponse(string $response): array
     {
-        $lines = explode(self::HTTP_SPEC_CRLF, $response);
+        $lines = explode(self::HTTP_SPEC_CRLF, $this->skipInterimResponses($response));
         $output = [
             'http-version'  => '',
             'status-code'   => 200,
@@ -180,7 +180,7 @@ class Curl implements ClientInterface
             }
             // Empty line, end of headers
             if (empty($line)) {
-                $output['body'] = $lines[$i+1] ?? '';
+                $output['body'] = implode(self::HTTP_SPEC_CRLF, array_slice($lines, $i + 1));
                 break;
             }
             // Extract header name and values
@@ -192,5 +192,27 @@ class Curl implements ClientInterface
             }
         }
         return $output;
+    }
+
+    /**
+     * Removes the interim (1xx) responses that precede the final response.
+     *
+     * With CURLOPT_HEADER curl returns them as well, e.g. "100 Continue" for
+     * a request with the "Expect: 100-continue" header, which curl adds on its
+     * own for a large body. "101 Switching Protocols" is kept, since it is final.
+     *
+     * @see https://datatracker.ietf.org/doc/html/rfc7231#section-6.2
+     */
+    private function skipInterimResponses(string $response): string
+    {
+        $endOfHeaders = self::HTTP_SPEC_CRLF . self::HTTP_SPEC_CRLF;
+        while (preg_match('#^HTTP/\S+ 1(?!01)\d\d(?:\s|$)#', $response) === 1) {
+            $end = strpos($response, $endOfHeaders);
+            if ($end === false) {
+                break;
+            }
+            $response = substr($response, $end + strlen($endOfHeaders));
+        }
+        return $response;
     }
 }
